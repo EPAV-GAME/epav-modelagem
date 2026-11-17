@@ -15,7 +15,9 @@ Esquema PostgreSQL real do projeto EPAV no Neon. Cada coleção possui sua tabel
 
 Fotos e os 36 campos originais da planilha ficam em tabelas relacionadas. Versões históricas têm seus próprios dados de origem e fotos. Preços, margens e volumes usam colunas numéricas; marcadores de ausência da planilha ficam em colunas de observação. Não existem colunas TEXT, JSON ou JSONB.
 
-O explorador mostra apenas as tabelas do projeto e a view pública do catálogo. As cópias temporárias da migração foram retiradas da produção após criar uma branch de backup. Duas tabelas de suporte necessárias à API permanecem em `epav_internal`, fora do explorador. Elas conservam os valores originais e mantêm as tabelas de negócio na mesma transação das gravações.
+A produção possui 11 tabelas funcionais. As seis principais são complementadas pelas tabelas de fotos, dados originais e versões históricas necessárias à auditoria e à recuperação de produtos arquivados. A API lê e grava diretamente nessas tabelas. A edição e seu histórico usam a mesma transação e verificam a revisão do produto.
+
+As tabelas temporárias de migração e de armazenamento genérico foram excluídas, incluindo o esquema interno e seus gatilhos de compatibilidade. Os registros antigos do Firestore também foram excluídos após a migração. As migrações anteriores permanecem no Git para documentar a evolução da estrutura.
 
 Firebase permanece somente na autenticação e na permissão administrativa. Fotos ficam no Cloudflare R2 e consultas frequentes usam Redis. O navegador nunca recebe a conexão do Postgres ou registros individuais pelo site de modelagem.
 
@@ -24,7 +26,9 @@ Firebase permanece somente na autenticação e na permissão administrativa. Fot
 - `migrations/001` e `002`: cópia completa e campos tipados.
 - `migrations/003` e `004`: dados operacionais e ranking de até 500 pontos.
 - `migrations/005`: tabelas correspondentes às coleções e relacionamentos.
-- `migrations/006` e `007`: encerramento da migração e separação do armazenamento interno.
+- `migrations/006` e `007`: etapa histórica de encerramento das cópias de migração.
+- `migrations/008` e `009`: acesso direto às tabelas relacionais e exclusão do armazenamento genérico.
+- `scripts/direct-storage.mjs`: compara os dados e testa edição, conflito, auditoria, arquivamento e restauração antes e depois da limpeza.
 - `scripts/cleanup-storage.mjs`: limpeza em duas etapas, com conferência de dados e teste de escrita com rollback.
 - `scripts/build-collection-model.mjs`: mapeamento explícito dos campos e geração de `005`.
 - `scripts/apply-collection-model.mjs`: aplicação com conferência de totais, catálogo e transações.

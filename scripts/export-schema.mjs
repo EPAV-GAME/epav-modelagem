@@ -46,6 +46,12 @@ async function main() {
     if (relations.length !== objects.length || columns.some(column => /^(?:text|jsonb?)(?:\[\])?$/.test(column.type))) {
       throw new Error('Confira as tabelas de negócio e os tipos antes de exportar.');
     }
+    const expectedTables = relations.filter(row=>row.kind==='table').map(row=>row.name).sort();
+    const {rows:allTables}=await client.query(`SELECT schemaname,tablename FROM pg_tables
+      WHERE schemaname NOT IN ('pg_catalog','information_schema') ORDER BY schemaname,tablename`);
+    if(allTables.length!==expectedTables.length || allTables.some(row=>row.schemaname!=='epav_data' || !expectedTables.includes(row.tablename))) {
+      throw new Error('Existem tabelas fora do modelo funcional. Confira a limpeza antes de publicar.');
+    }
     const application = {schema:'epav_data',tables:[]};
     for(const name of collections) {
       const {rows:[row]}=await client.query(`SELECT count(*)::int AS count FROM epav_data.${name}`);

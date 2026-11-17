@@ -156,7 +156,7 @@ window.addEventListener('hashchange',route);
 route();
 
 try {
-  const request = await fetch('./schema.json?v=20261117-clean');
+  const request = await fetch('./schema.json?v=20261117-relacional');
   if(!request.ok) throw new Error('Inventário indisponível.');
   model = await request.json();
   $('branch').textContent = model.branch;

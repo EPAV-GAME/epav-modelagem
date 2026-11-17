@@ -11,6 +11,9 @@ test('explorer contains only real business tables and their keys', () => {
   const ddlObjects = [...sql.matchAll(/CREATE (?:TABLE(?: IF NOT EXISTS)?|VIEW) epav_data\.(\w+)/g)].map(m=>m[1]);
   assert.deepEqual(model.objects.map(o=>o.name).sort(),[...new Set(ddlObjects)].filter(n=>!retired.includes(n)).sort());
   assert.equal(model.objects.filter(o=>o.kind==='view').length,1);
+  assert.equal(model.objects.filter(o=>o.kind==='table').length,11);
+  assert.ok(model.objects.every(o=>o.columns.every(c=>c.name!=='registro_id')));
+  assert.ok(model.objects.every(o=>o.constraints.every(c=>!c.definition.includes('epav_internal'))));
   assert.ok(model.objects.every(o=>o.schema==='epav_data' && !retired.includes(o.name)));
   for(const table of model.application.tables)assert.equal(model.objects.find(o=>o.name===table.name)?.kind,'table');
   assert.ok(model.objects.find(o=>o.name==='produtos_swift').constraints.some(c=>c.kind==='f' && c.definition.includes('importacoes_catalogo')));

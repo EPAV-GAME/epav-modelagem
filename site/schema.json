@@ -1,13 +1,13 @@
 {
   "schema": "epav_data",
   "branch": "production",
-  "capturedAt": "2026-11-17T15:14:54.804Z",
+  "capturedAt": "2026-11-17T22:26:22.773Z",
   "application": {
     "schema": "epav_data",
     "tables": [
       {
         "name": "arquivo_produtos_swift",
-        "count": 2777
+        "count": 2778
       },
       {
         "name": "auditoria_catalogo",
@@ -19,7 +19,7 @@
       },
       {
         "name": "produtos_swift",
-        "count": 918
+        "count": 917
       },
       {
         "name": "ranking",
@@ -224,12 +224,6 @@
           "default": null
         },
         {
-          "name": "registro_id",
-          "type": "bigint",
-          "nullable": false,
-          "default": null
-        },
-        {
           "name": "arquivo_origem",
           "type": "character varying(512)",
           "nullable": true,
@@ -300,33 +294,37 @@
           "type": "character varying(240)[]",
           "nullable": true,
           "default": null
+        },
+        {
+          "name": "revision",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
         }
       ],
       "constraints": [
         {
-          "name": "importacoes_catalogo_registro_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_internal.records(row_id) ON DELETE CASCADE"
-        },
-        {
           "name": "importacoes_catalogo_pkey",
           "kind": "p",
           "definition": "PRIMARY KEY (id)"
-        },
-        {
-          "name": "importacoes_catalogo_registro_id_key",
-          "kind": "u",
-          "definition": "UNIQUE (registro_id)"
         }
       ],
       "indexes": [
         {
           "name": "importacoes_catalogo_pkey",
           "definition": "CREATE UNIQUE INDEX importacoes_catalogo_pkey ON epav_data.importacoes_catalogo USING btree (id)"
-        },
-        {
-          "name": "importacoes_catalogo_registro_id_key",
-          "definition": "CREATE UNIQUE INDEX importacoes_catalogo_registro_id_key ON epav_data.importacoes_catalogo USING btree (registro_id)"
         }
       ]
     },
@@ -339,12 +337,6 @@
         {
           "name": "id",
           "type": "character varying(1500)",
-          "nullable": false,
-          "default": null
-        },
-        {
-          "name": "registro_id",
-          "type": "bigint",
           "nullable": false,
           "default": null
         },
@@ -407,6 +399,24 @@
           "type": "character varying(128)",
           "nullable": true,
           "default": null
+        },
+        {
+          "name": "revision",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
         }
       ],
       "constraints": [
@@ -416,19 +426,9 @@
           "definition": "FOREIGN KEY (importacao_id) REFERENCES epav_data.importacoes_catalogo(id)"
         },
         {
-          "name": "produtos_swift_registro_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_internal.records(row_id) ON DELETE CASCADE"
-        },
-        {
           "name": "produtos_swift_pkey",
           "kind": "p",
           "definition": "PRIMARY KEY (id)"
-        },
-        {
-          "name": "produtos_swift_registro_id_key",
-          "kind": "u",
-          "definition": "UNIQUE (registro_id)"
         }
       ],
       "indexes": [
@@ -443,10 +443,6 @@
         {
           "name": "produtos_swift_pkey",
           "definition": "CREATE UNIQUE INDEX produtos_swift_pkey ON epav_data.produtos_swift USING btree (id)"
-        },
-        {
-          "name": "produtos_swift_registro_id_key",
-          "definition": "CREATE UNIQUE INDEX produtos_swift_registro_id_key ON epav_data.produtos_swift USING btree (registro_id)"
         }
       ]
     },
@@ -458,12 +454,6 @@
       "columns": [
         {
           "name": "id",
-          "type": "bigint",
-          "nullable": false,
-          "default": null
-        },
-        {
-          "name": "registro_id",
           "type": "bigint",
           "nullable": false,
           "default": null
@@ -539,6 +529,12 @@
           "type": "character varying(128)",
           "nullable": true,
           "default": null
+        },
+        {
+          "name": "owner_id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
         }
       ],
       "constraints": [
@@ -553,29 +549,24 @@
           "definition": "FOREIGN KEY (importacao_id) REFERENCES epav_data.importacoes_catalogo(id)"
         },
         {
-          "name": "produtos_swift_versoes_registro_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_internal.records(row_id) ON DELETE CASCADE"
-        },
-        {
           "name": "produtos_swift_versoes_pkey",
           "kind": "p",
           "definition": "PRIMARY KEY (id)"
         },
         {
-          "name": "produtos_swift_versoes_registro_id_posicao_key",
+          "name": "produtos_swift_versoes_owner_id_posicao_key",
           "kind": "u",
-          "definition": "UNIQUE (registro_id, posicao)"
+          "definition": "UNIQUE (owner_id, posicao)"
         }
       ],
       "indexes": [
         {
-          "name": "produtos_swift_versoes_pkey",
-          "definition": "CREATE UNIQUE INDEX produtos_swift_versoes_pkey ON epav_data.produtos_swift_versoes USING btree (id)"
+          "name": "produtos_swift_versoes_owner_id_posicao_key",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_versoes_owner_id_posicao_key ON epav_data.produtos_swift_versoes USING btree (owner_id, posicao)"
         },
         {
-          "name": "produtos_swift_versoes_registro_id_posicao_key",
-          "definition": "CREATE UNIQUE INDEX produtos_swift_versoes_registro_id_posicao_key ON epav_data.produtos_swift_versoes USING btree (registro_id, posicao)"
+          "name": "produtos_swift_versoes_pkey",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_versoes_pkey ON epav_data.produtos_swift_versoes USING btree (id)"
         }
       ]
     },
@@ -1420,12 +1411,6 @@
           "default": null
         },
         {
-          "name": "registro_id",
-          "type": "bigint",
-          "nullable": false,
-          "default": null
-        },
-        {
           "name": "produto_origem_id",
           "type": "character varying(1500)",
           "nullable": false,
@@ -1460,6 +1445,24 @@
           "type": "bigint",
           "nullable": false,
           "default": null
+        },
+        {
+          "name": "revision",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
         }
       ],
       "constraints": [
@@ -1467,11 +1470,6 @@
           "name": "arquivo_produtos_swift_dados_versao_id_fkey",
           "kind": "f",
           "definition": "FOREIGN KEY (dados_versao_id) REFERENCES epav_data.produtos_swift_versoes(id)"
-        },
-        {
-          "name": "arquivo_produtos_swift_registro_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_internal.records(row_id) ON DELETE CASCADE"
         },
         {
           "name": "arquivo_produtos_swift_pkey",
@@ -1482,11 +1480,6 @@
           "name": "arquivo_produtos_swift_dados_versao_id_key",
           "kind": "u",
           "definition": "UNIQUE (dados_versao_id)"
-        },
-        {
-          "name": "arquivo_produtos_swift_registro_id_key",
-          "kind": "u",
-          "definition": "UNIQUE (registro_id)"
         }
       ],
       "indexes": [
@@ -1497,10 +1490,6 @@
         {
           "name": "arquivo_produtos_swift_pkey",
           "definition": "CREATE UNIQUE INDEX arquivo_produtos_swift_pkey ON epav_data.arquivo_produtos_swift USING btree (id)"
-        },
-        {
-          "name": "arquivo_produtos_swift_registro_id_key",
-          "definition": "CREATE UNIQUE INDEX arquivo_produtos_swift_registro_id_key ON epav_data.arquivo_produtos_swift USING btree (registro_id)"
         }
       ]
     },
@@ -1513,12 +1502,6 @@
         {
           "name": "id",
           "type": "character varying(1500)",
-          "nullable": false,
-          "default": null
-        },
-        {
-          "name": "registro_id",
-          "type": "bigint",
           "nullable": false,
           "default": null
         },
@@ -1563,6 +1546,24 @@
           "type": "bigint",
           "nullable": false,
           "default": null
+        },
+        {
+          "name": "revision",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
         }
       ],
       "constraints": [
@@ -1582,19 +1583,9 @@
           "definition": "FOREIGN KEY (produto_atual_id) REFERENCES epav_data.produtos_swift(id) ON DELETE SET NULL"
         },
         {
-          "name": "auditoria_catalogo_registro_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_internal.records(row_id) ON DELETE CASCADE"
-        },
-        {
           "name": "auditoria_catalogo_pkey",
           "kind": "p",
           "definition": "PRIMARY KEY (id)"
-        },
-        {
-          "name": "auditoria_catalogo_registro_id_key",
-          "kind": "u",
-          "definition": "UNIQUE (registro_id)"
         }
       ],
       "indexes": [
@@ -1605,10 +1596,6 @@
         {
           "name": "auditoria_catalogo_pkey",
           "definition": "CREATE UNIQUE INDEX auditoria_catalogo_pkey ON epav_data.auditoria_catalogo USING btree (id)"
-        },
-        {
-          "name": "auditoria_catalogo_registro_id_key",
-          "definition": "CREATE UNIQUE INDEX auditoria_catalogo_registro_id_key ON epav_data.auditoria_catalogo USING btree (registro_id)"
         }
       ]
     },
@@ -1621,12 +1608,6 @@
         {
           "name": "id",
           "type": "character varying(1500)",
-          "nullable": false,
-          "default": null
-        },
-        {
-          "name": "registro_id",
-          "type": "bigint",
           "nullable": false,
           "default": null
         },
@@ -1677,6 +1658,24 @@
           "type": "character varying(80)",
           "nullable": true,
           "default": null
+        },
+        {
+          "name": "revision",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
         }
       ],
       "constraints": [
@@ -1686,29 +1685,15 @@
           "definition": "FOREIGN KEY (produto_atual_id) REFERENCES epav_data.produtos_swift(id) ON DELETE SET NULL"
         },
         {
-          "name": "sincronizacao_imagens_swift_registro_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_internal.records(row_id) ON DELETE CASCADE"
-        },
-        {
           "name": "sincronizacao_imagens_swift_pkey",
           "kind": "p",
           "definition": "PRIMARY KEY (id)"
-        },
-        {
-          "name": "sincronizacao_imagens_swift_registro_id_key",
-          "kind": "u",
-          "definition": "UNIQUE (registro_id)"
         }
       ],
       "indexes": [
         {
           "name": "sincronizacao_imagens_swift_pkey",
           "definition": "CREATE UNIQUE INDEX sincronizacao_imagens_swift_pkey ON epav_data.sincronizacao_imagens_swift USING btree (id)"
-        },
-        {
-          "name": "sincronizacao_imagens_swift_registro_id_key",
-          "definition": "CREATE UNIQUE INDEX sincronizacao_imagens_swift_registro_id_key ON epav_data.sincronizacao_imagens_swift USING btree (registro_id)"
         }
       ]
     }

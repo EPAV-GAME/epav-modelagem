@@ -40,7 +40,7 @@ async function connect(staging, direct) {
   });
   await client.connect();
   if (['prepare','apply','migrate-types','verify'].includes(command) &&
-      (await client.query("SELECT to_regclass('epav_internal.records') IS NOT NULL AS retired")).rows[0].retired) {
+      (await client.query("SELECT to_regclass('epav_data.produtos_swift') IS NOT NULL AS retired")).rows[0].retired) {
     await client.end();
     throw new Error('A migração já foi encerrada nesta branch. Use uma branch isolada para importar cópias históricas.');
   }
