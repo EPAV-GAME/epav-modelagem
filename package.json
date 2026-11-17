@@ -1,0 +1,13 @@
+{
+  "name": "epav-modelagem",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "schema:refresh": "node scripts/export-schema.mjs"
+  },
+  "dependencies": {
+    "google-auth-library": "11.3.4",
+    "pg": "8.23.1"
+  }
+}

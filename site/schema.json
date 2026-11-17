@@ -1,0 +1,233 @@
+{
+  "schema": "epav_migration",
+  "branch": "epav-firestore-migration",
+  "capturedAt": "2026-11-17T12:30:34.942Z",
+  "snapshot": {
+    "readTime": "2026-11-17T12:11:35.187Z",
+    "total": 5646,
+    "collections": [
+      {
+        "name": "arquivo_produtos_swift",
+        "count": 2777
+      },
+      {
+        "name": "auditoria_catalogo",
+        "count": 4
+      },
+      {
+        "name": "importacoes_catalogo",
+        "count": 1
+      },
+      {
+        "name": "produtos_swift",
+        "count": 918
+      },
+      {
+        "name": "ranking",
+        "count": 0
+      },
+      {
+        "name": "sincronizacao_imagens_swift",
+        "count": 1946
+      }
+    ]
+  },
+  "objects": [
+    {
+      "name": "snapshots",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "source_database",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "source_read_time",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "document_count",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "snapshots_document_count_check",
+          "kind": "c",
+          "definition": "CHECK (document_count >= 0)"
+        },
+        {
+          "name": "snapshots_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "snapshots_source_database_source_read_time_key",
+          "kind": "u",
+          "definition": "UNIQUE (source_database, source_read_time)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "snapshots_pkey",
+          "definition": "CREATE UNIQUE INDEX snapshots_pkey ON epav_migration.snapshots USING btree (id)"
+        },
+        {
+          "name": "snapshots_source_database_source_read_time_key",
+          "definition": "CREATE UNIQUE INDEX snapshots_source_database_source_read_time_key ON epav_migration.snapshots USING btree (source_database, source_read_time)"
+        }
+      ]
+    },
+    {
+      "name": "documents",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "snapshot_id",
+          "type": "uuid",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "path",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "collection_path",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "document_id",
+          "type": "text",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "firestore_fields",
+          "type": "jsonb",
+          "nullable": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "documents_check",
+          "kind": "c",
+          "definition": "CHECK (path = ((collection_path || '/'::text) || document_id))"
+        },
+        {
+          "name": "documents_firestore_fields_check",
+          "kind": "c",
+          "definition": "CHECK (jsonb_typeof(firestore_fields) = 'object'::text)"
+        },
+        {
+          "name": "documents_snapshot_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (snapshot_id) REFERENCES epav_migration.snapshots(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "documents_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (snapshot_id, path)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "documents_pkey",
+          "definition": "CREATE UNIQUE INDEX documents_pkey ON epav_migration.documents USING btree (snapshot_id, path)"
+        },
+        {
+          "name": "epav_migration_documents_collection_idx",
+          "definition": "CREATE INDEX epav_migration_documents_collection_idx ON epav_migration.documents USING btree (snapshot_id, collection_path, document_id)"
+        }
+      ]
+    },
+    {
+      "name": "current_documents",
+      "kind": "view",
+      "definition": " SELECT d.snapshot_id,\n    d.path,\n    d.collection_path,\n    d.document_id,\n    d.created_at,\n    d.updated_at,\n    d.firestore_fields\n   FROM epav_migration.documents d\n     JOIN ( SELECT DISTINCT ON (snapshots.source_database) snapshots.id\n           FROM epav_migration.snapshots\n          ORDER BY snapshots.source_database, snapshots.source_read_time DESC) latest ON latest.id = d.snapshot_id;",
+      "columns": [
+        {
+          "name": "snapshot_id",
+          "type": "uuid",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "path",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "collection_path",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "document_id",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "firestore_fields",
+          "type": "jsonb",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [],
+      "indexes": []
+    }
+  ]
+}
