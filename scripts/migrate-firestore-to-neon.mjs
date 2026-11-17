@@ -4,23 +4,23 @@ import { parseEnv } from 'node:util';
 import { GoogleAuth, OAuth2Client } from 'google-auth-library';
 import pg from 'pg';
 import { firestoreReader, scanFirestore } from './firestore-snapshot.mjs';
+import { assertTyped, migrateTypes, storeFields } from './typed-storage.mjs';
 
-const schema = new URL('../migrations/001-firestore-snapshots.sql', import.meta.url);
 const args = new Set(process.argv.slice(2));
 const command = [...args][0];
-const commands = ['inventory', 'check-production', 'prepare', 'apply', 'verify'];
+const commands = ['inventory', 'check-production', 'prepare', 'apply', 'verify', 'migrate-types'];
 const allowDescendants = !args.has('--top-level');
 const project = 'epav-game';
 const database = '(default)';
 const stagingBranch = 'br-lucky-star-za2fy0sm';
 const productionBranch = 'br-little-thunder-za0v0lnz';
 const validateArgs = commands.includes(command) && [...args].every(arg => arg === command ||
-  (command === 'inventory' && arg === '--top-level'));
+  (command === 'inventory' && arg === '--top-level') || (command === 'migrate-types' && arg === '--dry-run'));
 
 async function connect(staging, direct) {
   // Never inherit a DATABASE_URL from an unrelated app in the shell.
   const file = staging ? '../.env.neon-migration' : '../.env.local';
-  const env = parseEnv(await readFile(new URL(file, import.meta.url), 'utf8'));
+  const env = parseEnv(await readFile((staging && process.env.EPAV_MIGRATION_ENV_FILE) || new URL(file, import.meta.url), 'utf8'));
   if (env.NEON_BRANCH_ID !== (staging ? stagingBranch : productionBranch)) {
     throw new Error('O arquivo local não corresponde à branch esperada.');
   }
@@ -28,7 +28,8 @@ async function connect(staging, direct) {
   const url = new URL(env[name] ?? '');
   if (!['postgresql:', 'postgres:'].includes(url.protocol) ||
       !url.hostname.endsWith('.neon.tech') ||
-      url.hostname.split('.')[0].endsWith('-pooler') === direct) {
+      url.hostname.split('.')[0].endsWith('-pooler') === direct ||
+      (staging && !url.hostname.startsWith('ep-jolly-glade-zat3ho4b.'))) {
     throw new Error('Configure uma URL Neon válida para o tipo de conexão esperado.');
   }
   url.searchParams.set('sslmode', 'verify-full');
@@ -77,25 +78,27 @@ async function sourceReader() {
 }
 
 const rowset = `jsonb_to_recordset($2::jsonb) AS x(
-  path text, collection_path text, document_id text,
-  created_at timestamptz, updated_at timestamptz, firestore_fields jsonb)`;
+  path varchar, collection_path varchar, document_id varchar,
+  created_at timestamptz, updated_at timestamptz)`;
 
 async function writeAndVerify(client, id, rows) {
   if (!rows.length) return;
-  const params = [id, JSON.stringify(rows)];
+  const original = new Map(rows.map(row=>[row.path,row.firestore_fields]));
+  const params = [id, JSON.stringify(rows.map(({firestore_fields,...metadata})=>metadata))];
   await client.query(
     `INSERT INTO epav_migration.documents
-     (snapshot_id, path, collection_path, document_id, created_at, updated_at, firestore_fields)
+     (snapshot_id, path, collection_path, document_id, created_at, updated_at)
      SELECT $1, x.* FROM ${rowset}`, params,
   );
-  const { rows: [result] } = await client.query(
-    `SELECT count(*)::int AS count
+  const { rows: inserted } = await client.query(
+    `SELECT d.row_id, d.path
      FROM ${rowset}
      JOIN epav_migration.documents d ON d.snapshot_id = $1 AND d.path = x.path
-       AND (d.collection_path, d.document_id, d.created_at, d.updated_at, d.firestore_fields)
-       = (x.collection_path, x.document_id, x.created_at, x.updated_at, x.firestore_fields)`, params,
+       AND (d.collection_path, d.document_id, d.created_at, d.updated_at)
+       = (x.collection_path, x.document_id, x.created_at, x.updated_at)`, params,
   );
-  if (result.count !== rows.length) throw new Error('A conferência do lote encontrou divergências.');
+  if (inserted.length !== rows.length) throw new Error('A conferência do lote encontrou divergências.');
+  await storeFields(client, inserted.map(row=>({...row,firestore_fields:original.get(row.path)})));
 }
 
 async function checkProduction() {
@@ -108,13 +111,12 @@ async function checkProduction() {
   }
 }
 
-async function prepare() {
+async function prepare(dryRun = false) {
   const client = await connect(true, true);
   try {
     await client.query('BEGIN');
-    await client.query(await readFile(schema, 'utf8'));
-    await client.query('COMMIT');
-    await client.query('BEGIN');
+    const migration = await migrateTypes(client);
+    await client.query('SAVEPOINT smoke_test');
     const id = randomUUID();
     await client.query(
       `INSERT INTO epav_migration.snapshots (id, source_database, source_read_time, document_count)
@@ -123,12 +125,20 @@ async function prepare() {
     await writeAndVerify(client, id, [{
       path: 'test/doc', collection_path: 'test', document_id: 'doc',
       created_at: '2026-01-01T12:00:00.123456Z', updated_at: '2026-01-02T12:00:00.654321Z',
-      firestore_fields: { int64: { integerValue: '9223372036854775807' }, list: { arrayValue: {} } },
+      firestore_fields: {
+        int64: { integerValue: '9223372036854775807' },
+        list: { arrayValue: {values: [{mapValue: {}},{nullValue:null},{doubleValue:'Infinity'},{booleanValue:false}]} },
+        instant: { timestampValue:'2026-01-01T12:00:00.123456Z' },
+        bytes: {bytesValue:'AAE='}, location: {geoPointValue:{latitude:-23,longitude:-46}},
+        reference: {referenceValue:'projects/epav-game/databases/(default)/documents/test/doc'},
+      },
     }]);
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK TO SAVEPOINT smoke_test');
     const { rows: [row] } = await client.query('SELECT count(*)::int AS count FROM epav_migration.snapshots WHERE id = $1', [id]);
     if (row.count !== 0) throw new Error('O teste deixou dados na branch.');
-    console.log('Esquema criado na branch de testes; escrita e conferência validadas sem guardar dados de teste.');
+    await client.query(dryRun?'ROLLBACK':'COMMIT');
+    if (migration) console.log(`${migration.documents} documentos e ${migration.fields} campos conferidos; ${dryRun?'simulação revertida':'esquema tipado confirmado'}.`);
+    else console.log('Esquema tipado já aplicado. Teste de escrita concluído sem guardar dados de teste.');
   } finally { await client.end(); }
 }
 
@@ -145,6 +155,7 @@ function summary(counts) {
 async function verify() {
   const client = await connect(true, true);
   try {
+    await assertTyped(client);
     const { rows: [snapshot] } = await client.query(
       `SELECT id, source_read_time, document_count
        FROM epav_migration.snapshots WHERE source_database = $1
@@ -160,6 +171,10 @@ async function verify() {
     if (count !== Number(snapshot.document_count)) throw new Error('A contagem da cópia confirmada diverge do manifesto.');
     console.log(`Cópia confirmada: ${count} documentos (${snapshot.source_read_time.toISOString()}).`);
     summary(new Map(rows.map(row => [row.collection_path, row.count])));
+    const {rows:[fieldCount]} = await client.query(`
+      SELECT count(*)::int AS count FROM epav_migration.document_fields f
+      JOIN epav_migration.documents d ON d.row_id = f.document_row_id WHERE d.snapshot_id = $1`,[snapshot.id]);
+    console.log(`${fieldCount.count} campos tipados na cópia; nenhuma coluna TEXT, JSON ou JSONB no esquema.`);
   } finally { await client.end(); }
 }
 
@@ -167,8 +182,7 @@ async function apply(reader, marker) {
   const client = await connect(true, true);
   try {
     await client.query('BEGIN');
-    await client.query('SELECT pg_advisory_xact_lock(17112026)');
-    await client.query(await readFile(schema, 'utf8'));
+    await migrateTypes(client);
     const id = randomUUID();
     await client.query(
       `INSERT INTO epav_migration.snapshots (id, source_database, source_read_time, document_count)
@@ -200,9 +214,10 @@ async function apply(reader, marker) {
 }
 
 try {
-  if (!validateArgs) throw new Error('Uso: node scripts/migrate-firestore-to-neon.mjs inventory [--top-level] | check-production | prepare | apply | verify');
+  if (!validateArgs) throw new Error('Uso: node scripts/migrate-firestore-to-neon.mjs inventory [--top-level] | check-production | prepare | apply | verify | migrate-types [--dry-run]');
   if (command === 'check-production') await checkProduction();
   else if (command === 'prepare') await prepare();
+  else if (command === 'migrate-types') await prepare(args.has('--dry-run'));
   else if (command === 'verify') await verify();
   else {
     const { marker, reader } = await sourceReader();

@@ -7,6 +7,7 @@ Origem: Firestore `epav-game`, banco `(default)`. Destino: [projeto Neon small-m
 - `.env.local`: conexões com pool (`DATABASE_URL`) e direta (`DATABASE_URL_UNPOOLED`) da branch `production`.
 - `.env.neon-migration`: conexões da branch isolada `epav-firestore-migration`. O importador exige a conexão direta dessa branch.
 - Os dois arquivos e `.neon` são ignorados pelo Git. O site estático nunca recebe nenhuma URL do banco.
+- No repositório de modelagem, é possível indicar outro arquivo local para a branch de teste com a variável `EPAV_MIGRATION_ENV_FILE`. O script continua validando a branch e o endpoint antes de conectar.
 - Use `GOOGLE_APPLICATION_CREDENTIALS` com uma credencial que tenha permissão IAM de leitura no **projeto de origem**, ou as credenciais padrão do Google com a mesma permissão. Uma conta de jogador ou uma claim de admin do Firebase Authentication não dá acesso IAM a esta exportação.
 
 Com Node.js 24 e `npm ci` no repositório:
@@ -18,6 +19,8 @@ node scripts/migrate-firestore-to-neon.mjs prepare
 node scripts/migrate-firestore-to-neon.mjs apply
 node scripts/migrate-firestore-to-neon.mjs verify
 ```
+
+Para atualizar uma cópia da versão antiga do esquema, execute `migrate-types --dry-run` no mesmo script e revise o resultado. Em seguida, execute `migrate-types` para confirmar. O script reconstrói cada documento a partir das linhas tipadas e compara os valores antes de remover a coluna antiga, na mesma transação. Nenhum dado de origem é alterado.
 
 `verify` abre uma nova conexão ao Neon e compara as contagens visíveis com a cópia confirmada, sem consultar o Firestore.
 
@@ -34,6 +37,15 @@ Em 17 de novembro de 2026, às 09:11 no horário de São Paulo, o único banco F
 | `sincronizacao_imagens_swift` | 1.946 |
 
 O inventário da cópia não encontrou documentos em `ranking`.
+
+## Esquema tipado
+
+- `snapshots` identifica cada cópia. `documents` guarda o caminho, a coleção, o ID do documento e suas datas.
+- `document_fields` guarda os valores em colunas como `VARCHAR`, `BIGINT`, `BOOLEAN`, `TIMESTAMPTZ` e `BYTEA`. Mapas e arrays têm linhas filhas e os arrays mantêm sua ordem.
+- `current_documents` expõe os metadados da cópia mais recente. As tabelas e a view não têm colunas `TEXT`, `JSON` ou `JSONB`. A tipagem desta cópia não troca o banco dos jogos.
+- O JSON usado temporariamente como parâmetro dos lotes do importador é apenas o formato de transporte; os valores são gravados nas colunas tipadas, sem uma coluna contendo o documento serializado.
+
+Não há um JSON inteiro guardado em `VARCHAR`: cada valor fica em sua coluna tipada. Os textos usam `VARCHAR` com tamanho definido, inteiros usam `BIGINT`, decimais da origem usam `DOUBLE PRECISION`, datas usam `TIMESTAMPTZ`, e os binários usam `BYTEA`. A enumeração `firestore_kind` e as restrições de cada linha validam qual coluna deve estar preenchida. As relações `document_row_id` e `parent_no` preservam documentos, mapas e listas sem perder sua estrutura.
 
 `check-production` executa somente uma consulta de conexão. `inventory` lista contagens; sem `--top-level`, inclui subcoleções. `prepare` cria o esquema de migração somente na branch de testes e reverte a gravação de exemplo. `apply` descobre todas as coleções e subcoleções do banco, inclusive sob documentos pai ausentes. Lê tudo em um mesmo instante do Firestore, em páginas. Cada cópia guarda caminho, IDs, datas e campos com os tipos originais do Firestore, incluindo inteiros de 64 bits e referências. O script compara os valores gravados e as contagens antes de confirmar a transação. Uma falha cancela a cópia inteira. As cópias anteriores permanecem disponíveis e a view `epav_migration.current_documents` aponta para a mais recente.
 

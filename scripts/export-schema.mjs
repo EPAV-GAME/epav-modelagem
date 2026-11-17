@@ -3,7 +3,7 @@ import { parseEnv } from 'node:util';
 import pg from 'pg';
 
 const namespace = 'epav_migration';
-const objects = ['snapshots', 'documents', 'current_documents'];
+const objects = ['snapshots', 'documents', 'document_fields', 'current_documents'];
 const collections = ['arquivo_produtos_swift', 'auditoria_catalogo', 'importacoes_catalogo',
   'produtos_swift', 'ranking', 'sincronizacao_imagens_swift'];
 const source = 'projects/epav-game/databases/(default)';
@@ -49,7 +49,8 @@ async function main() {
       SELECT split_part(d.collection_path,'/',1) AS name, count(*)::int AS count
       FROM epav_migration.current_documents d JOIN epav_migration.snapshots s ON s.id=d.snapshot_id
       WHERE s.source_database=$1 GROUP BY 1 ORDER BY 1`, [source]);
-    if (relations.length !== objects.length || !snapshot || counts.some(row => !collections.includes(row.name))
+    if (relations.length !== objects.length || columns.some(column => /^(?:text|jsonb?)(?:\[\])?$/.test(column.type))
+        || !snapshot || counts.some(row => !collections.includes(row.name))
         || counts.reduce((n,row) => n + row.count, 0) !== snapshot.total) {
       throw new Error('Confira os objetos, a lista pública de coleções e o manifesto antes de exportar.');
     }

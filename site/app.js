@@ -2,6 +2,7 @@ const $ = id => document.getElementById(id);
 const meta = {
   snapshots: ['Histórico de cópias', 'Uma linha por leitura confirmada do Firestore. Guarda o horário da leitura, o horário da importação e a contagem de documentos.'],
   documents: ['Documentos copiados', 'Uma linha por documento em cada cópia. O caminho completo distingue documentos com o mesmo ID em coleções diferentes.'],
+  document_fields: ['Campos e valores tipados', 'Uma linha por campo ou item de lista. A coluna kind indica o tipo do valor. parent_no liga os itens aos seus mapas e listas, e array_index preserva a ordem.'],
   current_documents: ['Cópia mais recente', 'A view consulta documents e escolhe, para cada banco de origem, a cópia com o horário de leitura mais recente. Não guarda outra cópia dos documentos.'],
 };
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -36,14 +37,16 @@ function objectButton(obj, graph=false) {
 }
 
 function graph() {
-  const [snapshots, documents, view] = model.objects;
+  const [snapshots, documents, fields, view] = model.objects;
   const connector = (label, tip, dashed=false) => {
     const el = node('div',undefined,'connector'+(dashed?' dashed':''));
     el.append(node('span',label),node('div',undefined,'arrow'),node('small',tip));
     return el;
   };
+  const viewBranch = node('div',undefined,'view-branch');
+  viewBranch.append(connector('Consulta','cópia mais recente',true),objectButton(view,true));
   $('graph').replaceChildren(objectButton(snapshots,true), connector('1 → N','snapshot_id'),
-    objectButton(documents,true), connector('Consulta','cópia mais recente',true), objectButton(view,true));
+    objectButton(documents,true), connector('1 → N','document_row_id'), objectButton(fields,true), viewBranch);
 }
 
 function sidebar() {
@@ -141,7 +144,7 @@ window.addEventListener('hashchange',route);
 route();
 
 try {
-  const request = await fetch('./schema.json');
+  const request = await fetch('./schema.json?v=20261117-types');
   if(!request.ok) throw new Error('Inventário indisponível.');
   model = await request.json();
   $('branch').textContent = model.branch;

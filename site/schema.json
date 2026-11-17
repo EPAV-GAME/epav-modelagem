@@ -1,7 +1,7 @@
 {
   "schema": "epav_migration",
   "branch": "epav-firestore-migration",
-  "capturedAt": "2026-11-17T12:30:34.942Z",
+  "capturedAt": "2026-11-17T13:15:52.934Z",
   "snapshot": {
     "readTime": "2026-11-17T12:11:35.187Z",
     "total": 5646,
@@ -46,7 +46,7 @@
         },
         {
           "name": "source_database",
-          "type": "text",
+          "type": "character varying(512)",
           "nullable": false,
           "default": null
         },
@@ -110,19 +110,19 @@
         },
         {
           "name": "path",
-          "type": "text",
+          "type": "character varying(6144)",
           "nullable": false,
           "default": null
         },
         {
           "name": "collection_path",
-          "type": "text",
+          "type": "character varying(6144)",
           "nullable": false,
           "default": null
         },
         {
           "name": "document_id",
-          "type": "text",
+          "type": "character varying(1500)",
           "nullable": false,
           "default": null
         },
@@ -139,8 +139,8 @@
           "default": null
         },
         {
-          "name": "firestore_fields",
-          "type": "jsonb",
+          "name": "row_id",
+          "type": "bigint",
           "nullable": false,
           "default": null
         }
@@ -149,12 +149,7 @@
         {
           "name": "documents_check",
           "kind": "c",
-          "definition": "CHECK (path = ((collection_path || '/'::text) || document_id))"
-        },
-        {
-          "name": "documents_firestore_fields_check",
-          "kind": "c",
-          "definition": "CHECK (jsonb_typeof(firestore_fields) = 'object'::text)"
+          "definition": "CHECK (path::text = ((collection_path::text || '/'::text) || document_id::text))"
         },
         {
           "name": "documents_snapshot_id_fkey",
@@ -165,6 +160,11 @@
           "name": "documents_pkey",
           "kind": "p",
           "definition": "PRIMARY KEY (snapshot_id, path)"
+        },
+        {
+          "name": "documents_row_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (row_id)"
         }
       ],
       "indexes": [
@@ -173,15 +173,188 @@
           "definition": "CREATE UNIQUE INDEX documents_pkey ON epav_migration.documents USING btree (snapshot_id, path)"
         },
         {
+          "name": "documents_row_id_key",
+          "definition": "CREATE UNIQUE INDEX documents_row_id_key ON epav_migration.documents USING btree (row_id)"
+        },
+        {
           "name": "epav_migration_documents_collection_idx",
           "definition": "CREATE INDEX epav_migration_documents_collection_idx ON epav_migration.documents USING btree (snapshot_id, collection_path, document_id)"
         }
       ]
     },
     {
+      "name": "document_fields",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "document_row_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "node_no",
+          "type": "integer",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "parent_no",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "field_name",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "array_index",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "kind",
+          "type": "epav_migration.firestore_kind",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "string_value",
+          "type": "character varying(1048487)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "integer_value",
+          "type": "bigint",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "double_value",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "boolean_value",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "timestamp_value",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "bytes_value",
+          "type": "bytea",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "reference_value",
+          "type": "character varying(6144)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "latitude",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "longitude",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "members_present",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "document_fields_array_index_check",
+          "kind": "c",
+          "definition": "CHECK (array_index >= 0)"
+        },
+        {
+          "name": "document_fields_check",
+          "kind": "c",
+          "definition": "CHECK (parent_no > 0 AND parent_no < node_no)"
+        },
+        {
+          "name": "document_fields_check1",
+          "kind": "c",
+          "definition": "CHECK (num_nonnulls(field_name, array_index) = 1 AND (parent_no IS NOT NULL OR array_index IS NULL))"
+        },
+        {
+          "name": "document_fields_check2",
+          "kind": "c",
+          "definition": "CHECK ((string_value IS NOT NULL) = (kind = 'stringValue'::epav_migration.firestore_kind) AND (integer_value IS NOT NULL) = (kind = 'integerValue'::epav_migration.firestore_kind) AND (double_value IS NOT NULL) = (kind = 'doubleValue'::epav_migration.firestore_kind) AND (boolean_value IS NOT NULL) = (kind = 'booleanValue'::epav_migration.firestore_kind) AND (timestamp_value IS NOT NULL) = (kind = 'timestampValue'::epav_migration.firestore_kind) AND (bytes_value IS NOT NULL) = (kind = 'bytesValue'::epav_migration.firestore_kind) AND (reference_value IS NOT NULL) = (kind = 'referenceValue'::epav_migration.firestore_kind) AND (latitude IS NOT NULL) = (kind = 'geoPointValue'::epav_migration.firestore_kind) AND (longitude IS NOT NULL) = (kind = 'geoPointValue'::epav_migration.firestore_kind) AND (members_present IS NOT NULL) = (kind = ANY (ARRAY['mapValue'::epav_migration.firestore_kind, 'arrayValue'::epav_migration.firestore_kind])))"
+        },
+        {
+          "name": "document_fields_latitude_check",
+          "kind": "c",
+          "definition": "CHECK (latitude >= '-90'::integer::double precision AND latitude <= 90::double precision)"
+        },
+        {
+          "name": "document_fields_longitude_check",
+          "kind": "c",
+          "definition": "CHECK (longitude >= '-180'::integer::double precision AND longitude <= 180::double precision)"
+        },
+        {
+          "name": "document_fields_node_no_check",
+          "kind": "c",
+          "definition": "CHECK (node_no > 0)"
+        },
+        {
+          "name": "document_fields_document_row_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (document_row_id) REFERENCES epav_migration.documents(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "document_fields_document_row_id_parent_no_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (document_row_id, parent_no) REFERENCES epav_migration.document_fields(document_row_id, node_no)"
+        },
+        {
+          "name": "document_fields_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (document_row_id, node_no)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "document_fields_array_index_idx",
+          "definition": "CREATE UNIQUE INDEX document_fields_array_index_idx ON epav_migration.document_fields USING btree (document_row_id, parent_no, array_index) WHERE (array_index IS NOT NULL)"
+        },
+        {
+          "name": "document_fields_member_idx",
+          "definition": "CREATE UNIQUE INDEX document_fields_member_idx ON epav_migration.document_fields USING btree (document_row_id, parent_no, field_name) NULLS NOT DISTINCT WHERE (field_name IS NOT NULL)"
+        },
+        {
+          "name": "document_fields_pkey",
+          "definition": "CREATE UNIQUE INDEX document_fields_pkey ON epav_migration.document_fields USING btree (document_row_id, node_no)"
+        }
+      ]
+    },
+    {
       "name": "current_documents",
       "kind": "view",
-      "definition": " SELECT d.snapshot_id,\n    d.path,\n    d.collection_path,\n    d.document_id,\n    d.created_at,\n    d.updated_at,\n    d.firestore_fields\n   FROM epav_migration.documents d\n     JOIN ( SELECT DISTINCT ON (snapshots.source_database) snapshots.id\n           FROM epav_migration.snapshots\n          ORDER BY snapshots.source_database, snapshots.source_read_time DESC) latest ON latest.id = d.snapshot_id;",
+      "definition": " SELECT d.snapshot_id,\n    d.path,\n    d.collection_path,\n    d.document_id,\n    d.created_at,\n    d.updated_at,\n    d.row_id\n   FROM epav_migration.documents d\n     JOIN ( SELECT DISTINCT ON (snapshots.source_database) snapshots.id\n           FROM epav_migration.snapshots\n          ORDER BY snapshots.source_database, snapshots.source_read_time DESC) latest ON latest.id = d.snapshot_id;",
       "columns": [
         {
           "name": "snapshot_id",
@@ -191,19 +364,19 @@
         },
         {
           "name": "path",
-          "type": "text",
+          "type": "character varying(6144)",
           "nullable": true,
           "default": null
         },
         {
           "name": "collection_path",
-          "type": "text",
+          "type": "character varying(6144)",
           "nullable": true,
           "default": null
         },
         {
           "name": "document_id",
-          "type": "text",
+          "type": "character varying(1500)",
           "nullable": true,
           "default": null
         },
@@ -220,8 +393,8 @@
           "default": null
         },
         {
-          "name": "firestore_fields",
-          "type": "jsonb",
+          "name": "row_id",
+          "type": "bigint",
           "nullable": true,
           "default": null
         }

@@ -2,7 +2,7 @@
 
 **[Abrir o explorador do esquema](https://epav-game.github.io/epav-modelagem/)**
 
-O site documenta o esquema PostgreSQL da branch de testes do EPAV no Neon. Ele mostra tabelas, chaves, índices, a definição da view e o total de documentos por coleção do Firestore na última cópia. Os nomes das coleções são apresentados separadamente porque elas ainda são armazenadas em JSONB, não em tabelas próprias.
+O site documenta o esquema PostgreSQL da branch de testes do EPAV no Neon. Ele mostra tabelas, chaves, índices, a definição da view e o total de documentos por coleção do Firestore. Cada documento tem metadados em `documents` e seus campos e itens de lista em `document_fields`. O esquema não tem colunas `TEXT`, `JSON` ou `JSONB`.
 
 | Caminho | Conteúdo |
 | --- | --- |
