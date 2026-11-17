@@ -1,5 +1,9 @@
 const $ = id => document.getElementById(id);
 const meta = {
+  records: ['Dados operacionais', 'Registros ativos usados pela API, pelo painel e pelo robô. A revisão identifica conflitos entre edições simultâneas.'],
+  record_fields: ['Valores operacionais', 'Campos tipados dos registros ativos. Preservam mapas, listas e todos os tipos da origem sem colunas JSON ou TEXT.'],
+  ranking: ['Resultados dos jogadores', 'Uma publicação por usuário do Firebase Authentication. Colunas próprias e limites para pontuação, satisfação e tempo.'],
+  products: ['Catálogo público', 'View com os campos públicos do produto: nome, código, categorias, marca, formato, unidade e foto. Dados comerciais ficam fora da resposta do jogo.'],
   snapshots: ['Histórico de cópias', 'Uma linha por leitura confirmada do Firestore. Guarda o horário da leitura, o horário da importação e a contagem de documentos.'],
   documents: ['Documentos copiados', 'Uma linha por documento em cada cópia. O caminho completo distingue documentos com o mesmo ID em coleções diferentes.'],
   document_fields: ['Campos e valores tipados', 'Uma linha por campo ou item de lista. A coluna kind indica o tipo do valor. parent_no liga os itens aos seus mapas e listas, e array_index preserva a ordem.'],
@@ -47,6 +51,14 @@ function graph() {
   viewBranch.append(connector('Consulta','cópia mais recente',true),objectButton(view,true));
   $('graph').replaceChildren(objectButton(snapshots,true), connector('1 → N','snapshot_id'),
     objectButton(documents,true), connector('1 → N','document_row_id'), objectButton(fields,true), viewBranch);
+  const runtime = node('div',undefined,'runtime-graph');
+  runtime.append(node('h3','Aplicação · epav_data'));
+  const cards=node('div',undefined,'runtime-cards');
+  for(const name of ['records','record_fields','products','ranking']) {
+    const obj=model.objects.find(o=>o.name===name);if(obj)cards.append(objectButton(obj,true));
+  }
+  runtime.append(node('p','records 1 → N record_fields · products consulta os campos públicos · ranking guarda os resultados'),cards);
+  $('graph').append(runtime);
 }
 
 function sidebar() {
@@ -144,7 +156,7 @@ window.addEventListener('hashchange',route);
 route();
 
 try {
-  const request = await fetch('./schema.json?v=20261117-types');
+  const request = await fetch('./schema.json?v=20261117-postgres');
   if(!request.ok) throw new Error('Inventário indisponível.');
   model = await request.json();
   $('branch').textContent = model.branch;

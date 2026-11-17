@@ -94,3 +94,5 @@ h4{margin:17px 0 7px;font-weight:750}
 @media(max-width:740px){.workspace{grid-template-columns:1fr}.objects{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}.intro{padding:32px 0 22px}.sidebar{padding:14px}}
 @media(max-width:500px){.frame{width:calc(100% - 24px)}.main-panel,.plain-panel{padding:14px}.graph{grid-template-columns:1fr;gap:3px}.entity{min-height:0}.connector{display:flex;align-items:center;justify-content:center;gap:9px}.arrow{width:18px;transform:rotate(90deg)}.section-head{align-items:flex-start}.footer{flex-wrap:wrap}th,td{padding:8px}.tab-strip button{padding:8px}}
 @media(max-width:500px){.view-branch{grid-column:1;margin-top:6px}}
+
+.runtime-graph{grid-column:1/-1;padding-top:24px;border-top:1px solid var(--line)}.runtime-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}.runtime-graph p{font-size:.85rem;margin:12px 0 20px}

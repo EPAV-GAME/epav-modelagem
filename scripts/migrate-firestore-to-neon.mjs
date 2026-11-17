@@ -9,18 +9,20 @@ import { assertTyped, migrateTypes, storeFields } from './typed-storage.mjs';
 const args = new Set(process.argv.slice(2));
 const command = [...args][0];
 const commands = ['inventory', 'check-production', 'prepare', 'apply', 'verify', 'migrate-types'];
+const productionTarget = args.has('--production');
 const allowDescendants = !args.has('--top-level');
 const project = 'epav-game';
 const database = '(default)';
 const stagingBranch = 'br-lucky-star-za2fy0sm';
 const productionBranch = 'br-little-thunder-za0v0lnz';
 const validateArgs = commands.includes(command) && [...args].every(arg => arg === command ||
-  (command === 'inventory' && arg === '--top-level') || (command === 'migrate-types' && arg === '--dry-run'));
+  (['apply','prepare','verify'].includes(command) && arg === '--production') || (command === 'inventory' && arg === '--top-level') || (command === 'migrate-types' && arg === '--dry-run'));
 
 async function connect(staging, direct) {
+  if (productionTarget) staging = false;
   // Never inherit a DATABASE_URL from an unrelated app in the shell.
   const file = staging ? '../.env.neon-migration' : '../.env.local';
-  const env = parseEnv(await readFile((staging && process.env.EPAV_MIGRATION_ENV_FILE) || new URL(file, import.meta.url), 'utf8'));
+  const env = parseEnv(await readFile(process.env.EPAV_MIGRATION_ENV_FILE || new URL(file, import.meta.url), 'utf8'));
   if (env.NEON_BRANCH_ID !== (staging ? stagingBranch : productionBranch)) {
     throw new Error('O arquivo local não corresponde à branch esperada.');
   }
@@ -208,7 +210,7 @@ async function apply(reader, marker) {
     if (actual.count !== total) throw new Error('A contagem total da cópia não confere.');
     await client.query('UPDATE epav_migration.snapshots SET document_count = $2 WHERE id = $1', [id, total]);
     await client.query('COMMIT');
-    console.log(`Cópia verificada de ${total} documentos na branch de testes (${marker}).`);
+    console.log(`Cópia verificada de ${total} documentos na branch ${productionTarget ? 'production' : 'de testes'} (${marker}).`);
     summary(counts);
   } finally { await client.end(); } // Closing rolls back an unfinished transaction.
 }

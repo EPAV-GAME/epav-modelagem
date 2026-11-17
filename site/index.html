@@ -7,8 +7,8 @@
 <meta name="description" content="Explore o esquema PostgreSQL e o inventário da migração de dados do EPAV.">
 <title>Modelagem de dados · EPAV</title>
 <link rel="icon" href="./epav-logo.webp" type="image/webp">
-<link rel="stylesheet" href="./style.css?v=20261117-types">
-<script type="module" src="./app.js?v=20261117-types"></script>
+<link rel="stylesheet" href="./style.css?v=20261117-postgres">
+<script type="module" src="./app.js?v=20261117-postgres"></script>
 </head>
 <body>
 <header class="topbar"><div class="frame top-inner"><a class="brand" href="./"><span class="symbol"><img src="./epav-logo.webp" alt="" width="38" height="34"></span> EPAV <span> / Dados</span></a><a class="repo" href="https://github.com/EPAV-GAME/epav-modelagem">GitHub <span aria-hidden="true">↗</span></a></div></header>
@@ -16,7 +16,7 @@
   <section class="intro" aria-labelledby="title">
     <div class="kicker"><span></span> POSTGRESQL NO NEON</div>
     <h1 id="title">Modelagem de dados<span>.</span></h1>
-    <p>Explore as tabelas, as chaves e a cópia do Firestore que prepara a migração do EPAV.</p>
+    <p>Explore as tabelas da aplicação, seus relacionamentos e as cópias preservadas na migração do EPAV.</p>
     <div class="meta"><code id="branch">epav-firestore-migration</code><span id="freshness">Carregando inventário…</span></div>
   </section>
   <nav class="tab-strip" aria-label="Seções">
@@ -28,7 +28,7 @@
   <section id="esquema" class="section">
     <div class="workspace">
       <aside class="sidebar" aria-label="Objetos do esquema">
-        <h2>Explorador</h2><code class="schema-name">epav_migration</code>
+        <h2>Explorador</h2><code class="schema-name">epav_migration + epav_data</code>
         <label class="sr-only" for="search">Buscar por objeto ou coluna</label>
         <input id="search" type="search" placeholder="Buscar objeto ou coluna">
         <div id="objects" class="objects"></div>
@@ -56,6 +56,6 @@
   </section>
   <noscript>Ative o JavaScript para explorar o esquema ou consulte o SQL no repositório.</noscript>
 </main>
-<footer class="frame footer"><strong>EPAV / Dados</strong><span>Inventário da branch de teste · sem registros individuais</span></footer>
+<footer class="frame footer"><strong>EPAV / Dados</strong><span>Inventário do banco PostgreSQL · sem registros individuais</span></footer>
 </body>
 </html>

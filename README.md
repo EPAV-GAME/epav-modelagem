@@ -20,3 +20,7 @@ O site documenta o esquema PostgreSQL da branch de testes do EPAV no Neon. Ele m
 4. Envie o JSON revisado e o SQL correspondente ao GitHub para publicar. A data no site indica quando o metadado foi coletado.
 
 O Pages publica somente `site/`. Conexões, credenciais, documentos individuais, identificadores de jogadores e dados internos do catálogo ficam fora do site e do Git.
+
+## Dados da aplicação
+
+A API, os jogos, o painel e o robô passam a usar o esquema operacional `epav_data`, definido em `003-application-data.sql`. O esquema `epav_migration` preserva os snapshots da origem. O Firebase fica com a autenticação. Consulte o guia de migração para a ativação, a conta limitada da API e a configuração dos segredos.

@@ -1,9 +1,9 @@
 {
-  "schema": "epav_migration",
-  "branch": "epav-firestore-migration",
-  "capturedAt": "2026-11-17T13:15:52.934Z",
+  "schema": "epav_migration + epav_data",
+  "branch": "production",
+  "capturedAt": "2026-11-17T14:12:33.087Z",
   "snapshot": {
-    "readTime": "2026-11-17T12:11:35.187Z",
+    "readTime": "2026-11-17T13:57:47.144Z",
     "total": 5646,
     "collections": [
       {
@@ -395,6 +395,425 @@
         {
           "name": "row_id",
           "type": "bigint",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [],
+      "indexes": []
+    },
+    {
+      "name": "records",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "row_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "collection_path",
+          "type": "character varying(6144)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "document_id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "revision",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "records_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (row_id)"
+        },
+        {
+          "name": "records_collection_path_document_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (collection_path, document_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "records_collection_path_document_id_key",
+          "definition": "CREATE UNIQUE INDEX records_collection_path_document_id_key ON epav_data.records USING btree (collection_path, document_id)"
+        },
+        {
+          "name": "records_pkey",
+          "definition": "CREATE UNIQUE INDEX records_pkey ON epav_data.records USING btree (row_id)"
+        },
+        {
+          "name": "records_recent",
+          "definition": "CREATE INDEX records_recent ON epav_data.records USING btree (collection_path, created_at DESC, document_id DESC)"
+        }
+      ]
+    },
+    {
+      "name": "record_fields",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "document_row_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "node_no",
+          "type": "integer",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "parent_no",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "field_name",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "array_index",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "kind",
+          "type": "epav_migration.firestore_kind",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "string_value",
+          "type": "character varying(1048487)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "integer_value",
+          "type": "bigint",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "double_value",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "boolean_value",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "timestamp_value",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "bytes_value",
+          "type": "bytea",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "reference_value",
+          "type": "character varying(6144)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "latitude",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "longitude",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "members_present",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "document_fields_array_index_check",
+          "kind": "c",
+          "definition": "CHECK (array_index >= 0)"
+        },
+        {
+          "name": "document_fields_check",
+          "kind": "c",
+          "definition": "CHECK (parent_no > 0 AND parent_no < node_no)"
+        },
+        {
+          "name": "document_fields_check1",
+          "kind": "c",
+          "definition": "CHECK (num_nonnulls(field_name, array_index) = 1 AND (parent_no IS NOT NULL OR array_index IS NULL))"
+        },
+        {
+          "name": "document_fields_check2",
+          "kind": "c",
+          "definition": "CHECK ((string_value IS NOT NULL) = (kind = 'stringValue'::epav_migration.firestore_kind) AND (integer_value IS NOT NULL) = (kind = 'integerValue'::epav_migration.firestore_kind) AND (double_value IS NOT NULL) = (kind = 'doubleValue'::epav_migration.firestore_kind) AND (boolean_value IS NOT NULL) = (kind = 'booleanValue'::epav_migration.firestore_kind) AND (timestamp_value IS NOT NULL) = (kind = 'timestampValue'::epav_migration.firestore_kind) AND (bytes_value IS NOT NULL) = (kind = 'bytesValue'::epav_migration.firestore_kind) AND (reference_value IS NOT NULL) = (kind = 'referenceValue'::epav_migration.firestore_kind) AND (latitude IS NOT NULL) = (kind = 'geoPointValue'::epav_migration.firestore_kind) AND (longitude IS NOT NULL) = (kind = 'geoPointValue'::epav_migration.firestore_kind) AND (members_present IS NOT NULL) = (kind = ANY (ARRAY['mapValue'::epav_migration.firestore_kind, 'arrayValue'::epav_migration.firestore_kind])))"
+        },
+        {
+          "name": "document_fields_latitude_check",
+          "kind": "c",
+          "definition": "CHECK (latitude >= '-90'::integer::double precision AND latitude <= 90::double precision)"
+        },
+        {
+          "name": "document_fields_longitude_check",
+          "kind": "c",
+          "definition": "CHECK (longitude >= '-180'::integer::double precision AND longitude <= 180::double precision)"
+        },
+        {
+          "name": "document_fields_node_no_check",
+          "kind": "c",
+          "definition": "CHECK (node_no > 0)"
+        },
+        {
+          "name": "record_fields_document_row_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (document_row_id) REFERENCES epav_data.records(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "record_fields_document_row_id_parent_no_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (document_row_id, parent_no) REFERENCES epav_data.record_fields(document_row_id, node_no)"
+        },
+        {
+          "name": "record_fields_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (document_row_id, node_no)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "record_fields_document_row_id_parent_no_array_index_idx",
+          "definition": "CREATE UNIQUE INDEX record_fields_document_row_id_parent_no_array_index_idx ON epav_data.record_fields USING btree (document_row_id, parent_no, array_index) WHERE (array_index IS NOT NULL)"
+        },
+        {
+          "name": "record_fields_document_row_id_parent_no_field_name_idx",
+          "definition": "CREATE UNIQUE INDEX record_fields_document_row_id_parent_no_field_name_idx ON epav_data.record_fields USING btree (document_row_id, parent_no, field_name) NULLS NOT DISTINCT WHERE (field_name IS NOT NULL)"
+        },
+        {
+          "name": "record_fields_lookup",
+          "definition": "CREATE INDEX record_fields_lookup ON epav_data.record_fields USING btree (document_row_id, field_name, parent_no)"
+        },
+        {
+          "name": "record_fields_pkey",
+          "definition": "CREATE UNIQUE INDEX record_fields_pkey ON epav_data.record_fields USING btree (document_row_id, node_no)"
+        }
+      ]
+    },
+    {
+      "name": "ranking",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "uid",
+          "type": "character varying(128)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "nome",
+          "type": "character varying(20)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "pontos",
+          "type": "integer",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "qualidade_quartos",
+          "type": "integer",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "satisfacao",
+          "type": "integer",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "classificacao",
+          "type": "character varying(40)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "tempo_jogado_ms",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "publicado_em",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "clock_timestamp()"
+        },
+        {
+          "name": "versao",
+          "type": "integer",
+          "nullable": false,
+          "default": "2"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "ranking_nome_check",
+          "kind": "c",
+          "definition": "CHECK (length(nome::text) >= 2 AND length(nome::text) <= 20)"
+        },
+        {
+          "name": "ranking_pontos_check",
+          "kind": "c",
+          "definition": "CHECK (pontos >= 0 AND pontos <= 500)"
+        },
+        {
+          "name": "ranking_qualidade_quartos_check",
+          "kind": "c",
+          "definition": "CHECK (qualidade_quartos >= 0 AND qualidade_quartos <= 160)"
+        },
+        {
+          "name": "ranking_satisfacao_check",
+          "kind": "c",
+          "definition": "CHECK (satisfacao >= 0 AND satisfacao <= 100)"
+        },
+        {
+          "name": "ranking_tempo_jogado_ms_check",
+          "kind": "c",
+          "definition": "CHECK (tempo_jogado_ms >= 0 AND tempo_jogado_ms <= 604800000)"
+        },
+        {
+          "name": "ranking_versao_check",
+          "kind": "c",
+          "definition": "CHECK (versao = 2)"
+        },
+        {
+          "name": "ranking_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (uid)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ranking_pkey",
+          "definition": "CREATE UNIQUE INDEX ranking_pkey ON epav_data.ranking USING btree (uid)"
+        },
+        {
+          "name": "ranking_score",
+          "definition": "CREATE INDEX ranking_score ON epav_data.ranking USING btree (pontos DESC, tempo_jogado_ms, uid)"
+        }
+      ]
+    },
+    {
+      "name": "products",
+      "kind": "view",
+      "definition": " SELECT document_id AS id,\n    ( SELECT record_fields.string_value\n           FROM epav_data.record_fields\n          WHERE record_fields.document_row_id = r.row_id AND record_fields.parent_no IS NULL AND record_fields.field_name::text = 'nome'::text) AS nome,\n    ( SELECT COALESCE(record_fields.string_value, record_fields.integer_value::character varying) AS \"coalesce\"\n           FROM epav_data.record_fields\n          WHERE record_fields.document_row_id = r.row_id AND record_fields.parent_no IS NULL AND record_fields.field_name::text = 'codigo'::text) AS codigo,\n    ( SELECT record_fields.boolean_value\n           FROM epav_data.record_fields\n          WHERE record_fields.document_row_id = r.row_id AND record_fields.parent_no IS NULL AND record_fields.field_name::text = 'disponivelNoJogo'::text) AS disponivel,\n    ARRAY( SELECT f.string_value::character varying(240) AS string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'tiposProduto'::text\n          ORDER BY f.array_index) AS tipos,\n    ARRAY( SELECT f.string_value::character varying(240) AS string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'ocasioes'::text\n          ORDER BY f.array_index) AS ocasioes,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'imagemSwift'::text AND f.field_name::text = 'url'::text) AS imagem_url,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'dadosOriginais'::text AND f.field_name::text = 'Marca'::text) AS marca,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'dadosOriginais'::text AND f.field_name::text = 'Formato'::text) AS formato,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'dadosOriginais'::text AND f.field_name::text = 'Unidade Medida'::text) AS unidade\n   FROM epav_data.records r\n  WHERE collection_path::text = 'produtos_swift'::text;",
+      "columns": [
+        {
+          "name": "id",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "nome",
+          "type": "character varying(1048487)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "codigo",
+          "type": "character varying",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "disponivel",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "tipos",
+          "type": "character varying(240)[]",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasioes",
+          "type": "character varying(240)[]",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "imagem_url",
+          "type": "character varying(1048487)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "marca",
+          "type": "character varying(1048487)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "formato",
+          "type": "character varying(1048487)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "unidade",
+          "type": "character varying(1048487)",
           "nullable": true,
           "default": null
         }

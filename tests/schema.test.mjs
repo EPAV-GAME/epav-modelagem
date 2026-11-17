@@ -3,13 +3,13 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const model = JSON.parse(await readFile(new URL('../site/schema.json', import.meta.url),'utf8'));
-const sql = (await Promise.all(['001-firestore-snapshots.sql','002-typed-document-fields.sql'].map(
+const sql = (await Promise.all(['001-firestore-snapshots.sql','002-typed-document-fields.sql','003-application-data.sql'].map(
   file=>readFile(new URL('../migrations/'+file,import.meta.url),'utf8')))).join('\n');
 
 test('public explorer matches the migration objects and the actual foreign key', () => {
-  const ddlObjects = [...sql.matchAll(/CREATE (?:TABLE(?: IF NOT EXISTS)?|VIEW) epav_migration\.(\w+)/g)].map(m=>m[1]);
+  const ddlObjects = [...sql.matchAll(/CREATE (?:TABLE(?: IF NOT EXISTS)?|VIEW) (?:epav_migration|epav_data)\.(\w+)/g)].map(m=>m[1]);
   assert.deepEqual(model.objects.map(o=>o.name),ddlObjects);
-  assert.deepEqual(model.objects.map(o=>o.kind),['table','table','table','view']);
+  assert.deepEqual(model.objects.map(o=>o.kind),['table','table','table','view','table','table','table','view']);
   assert.ok(model.objects[1].constraints.some(c=>c.kind==='f' && /FOREIGN KEY \(snapshot_id\).*snapshots\(id\)/.test(c.definition)));
   assert.ok(model.objects[1].constraints.some(c=>c.kind==='p' && /\(snapshot_id, path\)/.test(c.definition)));
   assert.ok(model.objects[2].constraints.some(c=>c.kind==='f' && /FOREIGN KEY \(document_row_id\).*documents\(row_id\)/.test(c.definition)));

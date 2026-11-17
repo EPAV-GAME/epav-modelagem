@@ -1,71 +1,34 @@
-# Migração do Firestore para Postgres no Neon
+# Migração Firestore → PostgreSQL (Neon)
 
-## Primeira etapa: copiar e conferir
+Projeto Neon: `small-meadow-02162774`, organização `org-super-voice-51320341`.
+Branch de produção: `br-little-thunder-za0v0lnz`.
+Branch de testes: `br-lucky-star-za2fy0sm` (`epav-firestore-migration`).
 
-Origem: Firestore `epav-game`, banco `(default)`. Destino: [projeto Neon small-meadow-02162774](https://console.neon.tech/app/projects/small-meadow-02162774/) na organização `org-super-voice-51320341`.
+## Destino dos dados
 
-- `.env.local`: conexões com pool (`DATABASE_URL`) e direta (`DATABASE_URL_UNPOOLED`) da branch `production`.
-- `.env.neon-migration`: conexões da branch isolada `epav-firestore-migration`. O importador exige a conexão direta dessa branch.
-- Os dois arquivos e `.neon` são ignorados pelo Git. O site estático nunca recebe nenhuma URL do banco.
-- No repositório de modelagem, é possível indicar outro arquivo local para a branch de teste com a variável `EPAV_MIGRATION_ENV_FILE`. O script continua validando a branch e o endpoint antes de conectar.
-- Use `GOOGLE_APPLICATION_CREDENTIALS` com uma credencial que tenha permissão IAM de leitura no **projeto de origem**, ou as credenciais padrão do Google com a mesma permissão. Uma conta de jogador ou uma claim de admin do Firebase Authentication não dá acesso IAM a esta exportação.
+- `epav_migration`: snapshots completos, documentos e campos tipados para conferir e preservar a origem.
+- `epav_data.records` e `record_fields`: registros operacionais do catálogo, importações, auditoria, arquivos recuperáveis e sincronização de fotos.
+- `epav_data.ranking`: colunas próprias para resultados dos jogadores.
+- `epav_data.products`: view com os campos públicos necessários ao jogo.
 
-Com Node.js 24 e `npm ci` no repositório:
+Não há colunas TEXT, JSON ou JSONB. Números, datas, bytes, referências, mapas, listas e valores nulos conservam seus tipos. JSON só aparece no transporte de parâmetros e nas respostas HTTP.
 
-```sh
-node scripts/migrate-firestore-to-neon.mjs check-production
-node scripts/migrate-firestore-to-neon.mjs inventory --top-level
-node scripts/migrate-firestore-to-neon.mjs prepare
-node scripts/migrate-firestore-to-neon.mjs apply
-node scripts/migrate-firestore-to-neon.mjs verify
-```
+Firebase Authentication continua responsável por contas, tokens, recuperação de senha e permissão `admin`. As fotos permanecem no Cloudflare R2. Redis mantém o catálogo público comprimido por 900 segundos e o ranking por 30 segundos. Publicar pontuação não invalida o catálogo de produtos.
 
-Para atualizar uma cópia da versão antiga do esquema, execute `migrate-types --dry-run` no mesmo script e revise o resultado. Em seguida, execute `migrate-types` para confirmar. O script reconstrói cada documento a partir das linhas tipadas e compara os valores antes de remover a coluna antiga, na mesma transação. Nenhum dado de origem é alterado.
+## Aplicações
 
-`verify` abre uma nova conexão ao Neon e compara as contagens visíveis com a cópia confirmada, sem consultar o Firestore.
+A API `epav-product-evaluator` acessa o Neon com uma conta limitada ao esquema operacional. A API sem IA reutiliza esse catálogo pelo binding existente. Os jogos publicam resultados pela API. O painel usa rotas administrativas paginadas com verificação do token e da permissão em cada operação. O robô usa um segredo próprio, sem chave privada Firebase.
 
-### Primeira cópia verificada
+Edições de produto e auditoria são atômicas e exigem a revisão que o painel leu. Arquivamentos do robô guardam a cópia e removem o produto na mesma transação, verificando também a revisão do registro canônico. Fotos manuais são preservadas.
 
-Em 17 de novembro de 2026, às 09:11 no horário de São Paulo, o único banco Firestore do projeto (`(default)`) tinha 5.646 documentos na leitura consistente, todos confirmados na branch de testes:
+## Procedimento reproduzível
 
-| Coleção | Documentos |
-| --- | ---: |
-| `arquivo_produtos_swift` | 2.777 |
-| `auditoria_catalogo` | 4 |
-| `importacoes_catalogo` | 1 |
-| `produtos_swift` | 918 |
-| `sincronizacao_imagens_swift` | 1.946 |
+1. Testar `001`, `002` e `003` na branch de testes e conferir os tipos e a reconstrução dos campos.
+2. Pausar a sincronização, impedir gravações dos clientes no Firestore e fazer a leitura final consistente.
+3. Importar e conferir a cópia: `node scripts/migrate-firestore-to-neon.mjs apply --production`. O arquivo indicado por `EPAV_MIGRATION_ENV_FILE` precisa conter a branch de produção e suas conexões; a credencial de leitura Google fica fora do Git.
+4. Ativar a cópia operacional: `node scripts/activate-data.mjs <arquivo-local-de-conexao> --production`. O script compara todos os campos antes de confirmar a transação e não sobrescreve uma base operacional existente.
+5. Configurar o usuário limitado e os segredos pelo script `configure-runtime.mjs` deste repositório. O arquivo de saída de conexões deve ser ignorado pelo Git e nunca publicado com o site.
+6. Publicar a API, os dois jogos e o painel; publicar o robô atualizado e retomar seu agendamento.
+7. Exportar apenas a estrutura e os totais: `node scripts/export-schema.mjs <arquivo-local-de-conexao> --production`. Nenhum registro individual vai para o site de modelagem.
 
-O inventário da cópia não encontrou documentos em `ranking`.
-
-## Esquema tipado
-
-- `snapshots` identifica cada cópia. `documents` guarda o caminho, a coleção, o ID do documento e suas datas.
-- `document_fields` guarda os valores em colunas como `VARCHAR`, `BIGINT`, `BOOLEAN`, `TIMESTAMPTZ` e `BYTEA`. Mapas e arrays têm linhas filhas e os arrays mantêm sua ordem.
-- `current_documents` expõe os metadados da cópia mais recente. As tabelas e a view não têm colunas `TEXT`, `JSON` ou `JSONB`. A tipagem desta cópia não troca o banco dos jogos.
-- O JSON usado temporariamente como parâmetro dos lotes do importador é apenas o formato de transporte; os valores são gravados nas colunas tipadas, sem uma coluna contendo o documento serializado.
-
-Não há um JSON inteiro guardado em `VARCHAR`: cada valor fica em sua coluna tipada. Os textos usam `VARCHAR` com tamanho definido, inteiros usam `BIGINT`, decimais da origem usam `DOUBLE PRECISION`, datas usam `TIMESTAMPTZ`, e os binários usam `BYTEA`. A enumeração `firestore_kind` e as restrições de cada linha validam qual coluna deve estar preenchida. As relações `document_row_id` e `parent_no` preservam documentos, mapas e listas sem perder sua estrutura.
-
-`check-production` executa somente uma consulta de conexão. `inventory` lista contagens; sem `--top-level`, inclui subcoleções. `prepare` cria o esquema de migração somente na branch de testes e reverte a gravação de exemplo. `apply` descobre todas as coleções e subcoleções do banco, inclusive sob documentos pai ausentes. Lê tudo em um mesmo instante do Firestore, em páginas. Cada cópia guarda caminho, IDs, datas e campos com os tipos originais do Firestore, incluindo inteiros de 64 bits e referências. O script compara os valores gravados e as contagens antes de confirmar a transação. Uma falha cancela a cópia inteira. As cópias anteriores permanecem disponíveis e a view `epav_migration.current_documents` aponta para a mais recente.
-
-## Troca dos serviços
-
-As regras e o código atual indicam pelo menos estes consumidores:
-
-| Dados | Leitura e escrita a migrar |
-| --- | --- |
-| `produtos_swift` | Avaliador e catálogo compartilhado, painel administrativo e robô de imagens |
-| `arquivo_produtos_swift`, `sincronizacao_imagens_swift` | Arquivo do catálogo e acompanhamento do robô de imagens |
-| `importacoes_catalogo`, `auditoria_catalogo` | Importador e painel; edição de produto e auditoria precisam ocorrer na mesma transação |
-| `ranking` | API pública de consulta, publicação pelos dois jogos e listagem no painel |
-| Outras coleções ou subcoleções | Inventário da origem antes de decidir quais precisam de acesso na API |
-
-1. Comparar contagens e dados na branch isolada. Derivar tabelas ou consultas de catálogo, ranking e auditoria do formato realmente encontrado.
-2. Adaptar os serviços para consultar e gravar no Postgres por uma API autenticada. Preservar o UID, a claim de admin, as validações de publicação, a separação entre catálogo público e dados internos e o cache do Redis.
-3. Testar escrita de ranking, edição com auditoria, sincronização de imagem e recomendações de ambas as versões. Verificar que o navegador só usa a API.
-4. Coordenar uma janela para suspender escritas antigas, importar uma cópia final, conferir a diferença e apontar os serviços ao Neon. Se houver retorno ao Firestore após aceitar escritas no Neon, reconciliar essas escritas antes de reabrir o Firestore.
-
-Firebase Authentication continua responsável pelo login e pela recuperação de senha; as fotos continuam no R2. Esses serviços não são coleções do Firestore. A primeira etapa não troca a origem dos jogos nem altera o Firestore.
-
-Referências: [API REST do Firestore](https://firebase.google.com/docs/firestore/reference/rest), [conexões com pool no Neon](https://neon.com/docs/connect/connection-pooling).
+Os arquivos locais de conexão e tokens não são versionados. Não remover o Firestore antigo nem os snapshots após o corte: permanecem como backup. As regras do Firestore negam acessos dos clientes; contas de serviço antigas devem ser retiradas dos serviços que não precisam mais delas.
