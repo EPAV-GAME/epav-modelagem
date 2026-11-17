@@ -3,10 +3,10 @@ import { parseEnv } from 'node:util';
 import pg from 'pg';
 
 const namespace = ['epav_data'];
-const objects = ['ranking','products','importacoes_catalogo','produtos_swift','produtos_swift_versoes',
+const objects = ['ranking','products','produtos_swift','produtos_swift_versoes',
   'produtos_swift_dados_originais','produtos_swift_imagens','versoes_produtos_dados_originais',
   'versoes_produtos_imagens','arquivo_produtos_swift','auditoria_catalogo','sincronizacao_imagens_swift'];
-const collections = ['arquivo_produtos_swift', 'auditoria_catalogo', 'importacoes_catalogo',
+const collections = ['arquivo_produtos_swift', 'auditoria_catalogo',
   'produtos_swift', 'ranking', 'sincronizacao_imagens_swift'];
 
 async function main() {

@@ -1,7 +1,6 @@
 const $ = id => document.getElementById(id);
 const meta = {
-  importacoes_catalogo: ['Importações', 'Origem do catálogo, arquivo, aba, hash de verificação, campos originais e totais. É referenciada pelos produtos e pelas versões históricas.'],
-  produtos_swift: ['Produtos ativos', 'Catálogo com código, nome, disponibilidade, tipos, ocasiões, importação de origem e autoria das alterações. Fotos e dados comerciais ficam em tabelas relacionadas.'],
+  produtos_swift: ['Produtos ativos', 'Catálogo com código, nome, disponibilidade, tipos, ocasiões e autoria das alterações. Fotos e dados comerciais ficam em tabelas relacionadas.'],
   produtos_swift_versoes: ['Versões históricas de produtos', 'Preserva os produtos arquivados e os estados antes/depois das edições. Cada versão tem dados de origem e foto próprios, sem colunas JSON.'],
   produtos_swift_dados_originais: ['Dados de origem dos produtos', 'Colunas próprias para os 36 campos da planilha. Valores numéricos e observações de preço/margem são separados para conservar os valores ausentes da origem.'],
   produtos_swift_imagens: ['Fotos dos produtos', 'Foto do R2, dimensões, tamanho, hashes, origem, correspondência e identificação das fotos manuais. Relacionada ao produto por chave estrangeira.'],
@@ -156,7 +155,7 @@ window.addEventListener('hashchange',route);
 route();
 
 try {
-  const request = await fetch('./schema.json?v=20261117-relacional');
+  const request = await fetch('./schema.json?v=20261117-sem-importacoes');
   if(!request.ok) throw new Error('Inventário indisponível.');
   model = await request.json();
   $('branch').textContent = model.branch;

@@ -1,7 +1,7 @@
 {
   "schema": "epav_data",
   "branch": "production",
-  "capturedAt": "2026-11-17T22:26:22.773Z",
+  "capturedAt": "2026-11-17T22:38:44.925Z",
   "application": {
     "schema": "epav_data",
     "tables": [
@@ -12,10 +12,6 @@
       {
         "name": "auditoria_catalogo",
         "count": 4
-      },
-      {
-        "name": "importacoes_catalogo",
-        "count": 1
       },
       {
         "name": "produtos_swift",
@@ -213,123 +209,6 @@
     },
     {
       "schema": "epav_data",
-      "name": "importacoes_catalogo",
-      "kind": "table",
-      "definition": null,
-      "columns": [
-        {
-          "name": "id",
-          "type": "character varying(1500)",
-          "nullable": false,
-          "default": null
-        },
-        {
-          "name": "arquivo_origem",
-          "type": "character varying(512)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "aba_origem",
-          "type": "character varying(120)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "colecao_origem",
-          "type": "character varying(120)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "projeto_firebase_origem",
-          "type": "character varying(128)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "importacao_origem_id",
-          "type": "character varying(1500)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "schema_version",
-          "type": "integer",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "sha256_origem",
-          "type": "character varying(64)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "status",
-          "type": "character varying(80)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "total_disponiveis",
-          "type": "integer",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "total_registros",
-          "type": "integer",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "verificado_em",
-          "type": "timestamp with time zone",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "campos_originais",
-          "type": "character varying(240)[]",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "revision",
-          "type": "uuid",
-          "nullable": false,
-          "default": "gen_random_uuid()"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "default": "clock_timestamp()"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "default": "clock_timestamp()"
-        }
-      ],
-      "constraints": [
-        {
-          "name": "importacoes_catalogo_pkey",
-          "kind": "p",
-          "definition": "PRIMARY KEY (id)"
-        }
-      ],
-      "indexes": [
-        {
-          "name": "importacoes_catalogo_pkey",
-          "definition": "CREATE UNIQUE INDEX importacoes_catalogo_pkey ON epav_data.importacoes_catalogo USING btree (id)"
-        }
-      ]
-    },
-    {
-      "schema": "epav_data",
       "name": "produtos_swift",
       "kind": "table",
       "definition": null,
@@ -355,18 +234,6 @@
         {
           "name": "disponivel_no_jogo",
           "type": "boolean",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "importacao_id",
-          "type": "character varying(1500)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "linha_origem",
-          "type": "integer",
           "nullable": true,
           "default": null
         },
@@ -420,11 +287,6 @@
         }
       ],
       "constraints": [
-        {
-          "name": "produtos_swift_importacao_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (importacao_id) REFERENCES epav_data.importacoes_catalogo(id)"
-        },
         {
           "name": "produtos_swift_pkey",
           "kind": "p",
@@ -489,18 +351,6 @@
           "default": null
         },
         {
-          "name": "importacao_id",
-          "type": "character varying(1500)",
-          "nullable": true,
-          "default": null
-        },
-        {
-          "name": "linha_origem",
-          "type": "integer",
-          "nullable": true,
-          "default": null
-        },
-        {
           "name": "tipos_produto",
           "type": "character varying(240)[]",
           "nullable": true,
@@ -542,11 +392,6 @@
           "name": "produtos_swift_versoes_posicao_check",
           "kind": "c",
           "definition": "CHECK (posicao::text = ANY (ARRAY['dados'::character varying, 'antes'::character varying, 'depois'::character varying]::text[]))"
-        },
-        {
-          "name": "produtos_swift_versoes_importacao_id_fkey",
-          "kind": "f",
-          "definition": "FOREIGN KEY (importacao_id) REFERENCES epav_data.importacoes_catalogo(id)"
         },
         {
           "name": "produtos_swift_versoes_pkey",
