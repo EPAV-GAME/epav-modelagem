@@ -1,17 +1,6 @@
 const $ = id => document.getElementById(id);
-const meta = {
-  produtos_swift: ['Produtos ativos', 'Catálogo com código, nome, disponibilidade, tipos, ocasiões e autoria das alterações. Fotos e dados comerciais ficam em tabelas relacionadas.'],
-  produtos_swift_versoes: ['Versões históricas de produtos', 'Preserva os produtos arquivados e os estados antes/depois das edições. Cada versão tem dados de origem e foto próprios, sem colunas JSON.'],
-  produtos_swift_dados_originais: ['Dados de origem dos produtos', 'Colunas próprias para os 36 campos da planilha. Valores numéricos e observações de preço/margem são separados para conservar os valores ausentes da origem.'],
-  produtos_swift_imagens: ['Fotos dos produtos', 'Foto do R2, dimensões, tamanho, hashes, origem, correspondência e identificação das fotos manuais. Relacionada ao produto por chave estrangeira.'],
-  versoes_produtos_dados_originais: ['Dados das versões históricas', 'Preserva os dados comerciais e classificações de cada versão antes/depois ou arquivada.'],
-  versoes_produtos_imagens: ['Fotos históricas', 'Metadados da foto vinculada a cada versão histórica de um produto.'],
-  arquivo_produtos_swift: ['Produtos arquivados', 'Motivo, momento do arquivamento, versão original e referência à cópia completa do produto. O identificador de origem é mantido mesmo após sua remoção do catálogo.'],
-  auditoria_catalogo: ['Histórico de alterações', 'Administrador, data e produto alterado, com referências às versões completas antes e depois. O histórico permanece após arquivar o produto.'],
-  sincronizacao_imagens_swift: ['Sincronização de fotos', 'Última verificação, ETag, Last-Modified, hash e URL de origem. Preserva verificações históricas mesmo quando o produto já não está ativo.'],
-  ranking: ['Resultados dos jogadores', 'Uma publicação por usuário do Firebase Authentication. Colunas próprias e limites para pontuação, satisfação e tempo.'],
-  products: ['Catálogo público', 'View com os campos públicos do produto: nome, código, categorias, marca, formato, unidade e foto. Dados comerciais ficam fora da resposta do jogo.'],
-};
+import {tableGuide as meta} from './table-guide.mjs?v=20261117-explicacoes';
+
 const fmt = new Intl.NumberFormat('pt-BR');
 const date = new Intl.DateTimeFormat('pt-BR', {dateStyle:'medium',timeStyle:'short',timeZone:'America/Sao_Paulo'});
 const sections = ['esquema', 'colecoes', 'scripts'];
@@ -37,7 +26,7 @@ function objectButton(obj, graph=false) {
   button.setAttribute('aria-pressed', String(obj.name === selected));
   if (graph) {
     const title = node('span', obj.kind === 'view' ? 'VIEW' : 'TABELA', 'type-label');
-    button.append(title, node('code', obj.name), node('span', meta[obj.name][0], 'entity-caption'));
+    button.append(title, node('code', obj.name), node('span', meta[obj.name].title, 'entity-caption'));
   } else button.append(node('span', obj.kind === 'view' ? 'V' : 'T', 'object-letter'), node('code',obj.name));
   button.addEventListener('click', () => select(obj.name));
   return button;
@@ -62,7 +51,7 @@ function graph() {
 
 function sidebar() {
   const term = $('search').value.trim().toLowerCase();
-  const filtered = model.objects.filter(o => [o.name, meta[o.name][0], ...o.columns.map(c=>c.name)]
+  const filtered = model.objects.filter(o => [o.name, ...Object.values(meta[o.name]), ...o.columns.map(c=>c.name)]
     .some(value => value.toLowerCase().includes(term)));
   $('objects').replaceChildren(...(filtered.length ? filtered.map(o=>objectButton(o)) :
     [node('p','Nenhum objeto ou coluna encontrado.','muted')]));
@@ -108,7 +97,17 @@ function openObject(name) {
   const columns = makeTable(['Coluna','Tipo','Aceita NULL','Padrão'],
     obj.columns.map(c=>[node('code',c.name),node('code',c.type),obj.kind==='view'?'—':c.nullable?'Sim':'Não',c.default??'—']),
     'Colunas de '+obj.name);
-  const children = [heading,node('p',meta[name][1],'description'),columns];
+  const guide = meta[name];
+  const children = [
+    heading,
+    node('p',guide.description,'description'),
+    node('h4','Por que é importante'),
+    node('p',guide.importance,'description'),
+    node('h4','Uso no sistema'),
+    node('p',guide.usage,'description'),
+    node('h4','Colunas'),
+    columns,
+  ];
   if (obj.constraints.length) {
     const items = node('ul',undefined,'key-list');
     for(const k of obj.constraints) {
@@ -155,7 +154,7 @@ window.addEventListener('hashchange',route);
 route();
 
 try {
-  const request = await fetch('./schema.json?v=20261117-sem-importacoes');
+  const request = await fetch('./schema.json?v=20261117-explicacoes');
   if(!request.ok) throw new Error('Inventário indisponível.');
   model = await request.json();
   $('branch').textContent = model.branch;
