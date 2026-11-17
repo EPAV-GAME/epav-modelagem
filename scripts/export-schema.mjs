@@ -3,7 +3,9 @@ import { parseEnv } from 'node:util';
 import pg from 'pg';
 
 const namespace = ['epav_migration','epav_data'];
-const objects = ['snapshots', 'documents', 'document_fields', 'current_documents', 'records', 'record_fields', 'ranking', 'products'];
+const objects = ['snapshots', 'documents', 'document_fields', 'current_documents', 'records', 'record_fields', 'ranking', 'products', 'importacoes_catalogo','produtos_swift','produtos_swift_versoes',
+  'produtos_swift_dados_originais','produtos_swift_imagens','versoes_produtos_dados_originais',
+  'versoes_produtos_imagens','arquivo_produtos_swift','auditoria_catalogo','sincronizacao_imagens_swift'];
 const collections = ['arquivo_produtos_swift', 'auditoria_catalogo', 'importacoes_catalogo',
   'produtos_swift', 'ranking', 'sincronizacao_imagens_swift'];
 const source = 'projects/epav-game/databases/(default)';
@@ -21,7 +23,7 @@ async function main() {
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const params = [namespace, objects];
     const { rows: relations } = await client.query(`
-      SELECT c.relname AS name, CASE c.relkind WHEN 'v' THEN 'view' ELSE 'table' END AS kind,
+      SELECT n.nspname AS schema, c.relname AS name, CASE c.relkind WHEN 'v' THEN 'view' ELSE 'table' END AS kind,
         CASE WHEN c.relkind='v' THEN pg_get_viewdef(c.oid, true) END AS definition
       FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
       WHERE n.nspname=ANY($1::varchar[]) AND c.relname=ANY($2) AND c.relkind IN ('r','v')`, params);
@@ -54,9 +56,15 @@ async function main() {
         || counts.reduce((n,row) => n + row.count, 0) !== snapshot.total) {
       throw new Error('Confira os objetos, a lista pública de coleções e o manifesto antes de exportar.');
     }
+    const application = {schema:'epav_data',tables:[]};
+    for(const name of collections) {
+      const {rows:[row]}=await client.query(`SELECT count(*)::int AS count FROM epav_data.${name}`);
+      application.tables.push({name,count:row.count});
+    }
     await client.query('COMMIT');
     const model = {
       schema: namespace.join(' + '), branch: process.argv.includes('--production')?'production':'epav-firestore-migration', capturedAt: new Date().toISOString(),
+      application,
       snapshot: {...snapshot, collections: collections.map(name => ({name, count: counts.find(row=>row.name===name)?.count ?? 0}))},
       objects: objects.map(name => {
         const only = rows => rows.filter(row => row.object===name).map(({object,...rest}) => rest);

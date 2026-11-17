@@ -96,3 +96,5 @@ h4{margin:17px 0 7px;font-weight:750}
 @media(max-width:500px){.view-branch{grid-column:1;margin-top:6px}}
 
 .runtime-graph{grid-column:1/-1;padding-top:24px;border-top:1px solid var(--line)}.runtime-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}.runtime-graph p{font-size:.85rem;margin:12px 0 20px}
+
+.graph{display:block}.business-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}.entity code{overflow-wrap:anywhere}.business-relations{margin:12px 0 0;padding-left:16px}.relation-link{border:0;background:transparent;text-align:left;font:11px var(--mono);padding:5px 0;overflow-wrap:anywhere;color:var(--ink);cursor:pointer}.relation-link:hover,.table-link:hover{text-decoration:underline}.table-link{font:12px var(--mono)}

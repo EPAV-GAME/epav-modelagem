@@ -1,5 +1,15 @@
 const $ = id => document.getElementById(id);
 const meta = {
+  importacoes_catalogo: ['Importações', 'Origem do catálogo, arquivo, aba, hash de verificação, campos originais e totais. É referenciada pelos produtos e pelas versões históricas.'],
+  produtos_swift: ['Produtos ativos', 'Catálogo com código, nome, disponibilidade, tipos, ocasiões, importação de origem e autoria das alterações. Fotos e dados comerciais ficam em tabelas relacionadas.'],
+  produtos_swift_versoes: ['Versões históricas de produtos', 'Preserva os produtos arquivados e os estados antes/depois das edições. Cada versão tem dados de origem e foto próprios, sem colunas JSON.'],
+  produtos_swift_dados_originais: ['Dados de origem dos produtos', 'Colunas próprias para os 36 campos da planilha. Valores numéricos e observações de preço/margem são separados para conservar os valores ausentes da origem.'],
+  produtos_swift_imagens: ['Fotos dos produtos', 'Foto do R2, dimensões, tamanho, hashes, origem, correspondência e identificação das fotos manuais. Relacionada ao produto por chave estrangeira.'],
+  versoes_produtos_dados_originais: ['Dados das versões históricas', 'Preserva os dados comerciais e classificações de cada versão antes/depois ou arquivada.'],
+  versoes_produtos_imagens: ['Fotos históricas', 'Metadados da foto vinculada a cada versão histórica de um produto.'],
+  arquivo_produtos_swift: ['Produtos arquivados', 'Motivo, momento do arquivamento, versão original e referência à cópia completa do produto. O identificador de origem é mantido mesmo após sua remoção do catálogo.'],
+  auditoria_catalogo: ['Histórico de alterações', 'Administrador, data e produto alterado, com referências às versões completas antes e depois. O histórico permanece após arquivar o produto.'],
+  sincronizacao_imagens_swift: ['Sincronização de fotos', 'Última verificação, ETag, Last-Modified, hash e URL de origem. Preserva verificações históricas mesmo quando o produto já não está ativo.'],
   records: ['Dados operacionais', 'Registros ativos usados pela API, pelo painel e pelo robô. A revisão identifica conflitos entre edições simultâneas.'],
   record_fields: ['Valores operacionais', 'Campos tipados dos registros ativos. Preservam mapas, listas e todos os tipos da origem sem colunas JSON ou TEXT.'],
   ranking: ['Resultados dos jogadores', 'Uma publicação por usuário do Firebase Authentication. Colunas próprias e limites para pontuação, satisfação e tempo.'],
@@ -13,7 +23,7 @@ const fmt = new Intl.NumberFormat('pt-BR');
 const date = new Intl.DateTimeFormat('pt-BR', {dateStyle:'medium',timeStyle:'short',timeZone:'America/Sao_Paulo'});
 const sections = ['esquema', 'colecoes', 'scripts'];
 const kinds = { p:'Chave primária', f:'Chave estrangeira', u:'Única', c:'Validação' };
-let model, selected = 'snapshots';
+let model, selected = 'produtos_swift';
 
 function node(tag, text, className) {
   const el = document.createElement(tag);
@@ -41,24 +51,20 @@ function objectButton(obj, graph=false) {
 }
 
 function graph() {
-  const [snapshots, documents, fields, view] = model.objects;
-  const connector = (label, tip, dashed=false) => {
-    const el = node('div',undefined,'connector'+(dashed?' dashed':''));
-    el.append(node('span',label),node('div',undefined,'arrow'),node('small',tip));
-    return el;
-  };
-  const viewBranch = node('div',undefined,'view-branch');
-  viewBranch.append(connector('Consulta','cópia mais recente',true),objectButton(view,true));
-  $('graph').replaceChildren(objectButton(snapshots,true), connector('1 → N','snapshot_id'),
-    objectButton(documents,true), connector('1 → N','document_row_id'), objectButton(fields,true), viewBranch);
-  const runtime = node('div',undefined,'runtime-graph');
-  runtime.append(node('h3','Aplicação · epav_data'));
-  const cards=node('div',undefined,'runtime-cards');
-  for(const name of ['records','record_fields','products','ranking']) {
-    const obj=model.objects.find(o=>o.name===name);if(obj)cards.append(objectButton(obj,true));
+  const cards=node('div',undefined,'business-cards');
+  const names=model.application.tables.map(t=>t.name);
+  for(const name of names)cards.append(objectButton(model.objects.find(o=>o.name===name),true));
+  const links=node('ul',undefined,'business-relations');
+  for(const obj of model.objects.filter(o=>o.schema==='epav_data')) {
+    for(const constraint of obj.constraints.filter(c=>c.kind==='f')) {
+      const target=constraint.definition.match(/REFERENCES (?:epav_data\.)?(\w+)\(([^)]+)\)/);
+      const local=constraint.definition.match(/FOREIGN KEY \(([^)]+)\)/);
+      if(!target || target[1]==='records' || target[1]==='record_fields')continue;
+      const item=node('li');const button=node('button',obj.name+'.'+local[1]+' → '+target[1]+'.'+target[2],'relation-link');
+      button.type='button';button.onclick=()=>select(obj.name);item.append(button);links.append(item);
+    }
   }
-  runtime.append(node('p','records 1 → N record_fields · products consulta os campos públicos · ranking guarda os resultados'),cards);
-  $('graph').append(runtime);
+  $('graph').replaceChildren(cards,node('h3','Relacionamentos'),links);
 }
 
 function sidebar() {
@@ -135,19 +141,19 @@ function route() {
 }
 
 function showCollections() {
-  const { snapshot } = model;
-  const largest = Math.max(1,...snapshot.collections.map(c=>c.count));
-  $('doc-total').textContent = fmt.format(snapshot.total)+' documentos';
-  $('snapshot-date').textContent = 'Cópia de '+date.format(new Date(snapshot.readTime))+' (horário de São Paulo).';
-  const rows = snapshot.collections.map(({name,count})=>{
-    const countCell = node('div',undefined,'count-cell');
-    const bar = node('span',undefined,'bar');
-    const fill = node('span');
-    fill.style.width = count/largest*100+'%'; bar.setAttribute('aria-hidden','true'); bar.append(fill);
-    countCell.append(node('strong',fmt.format(count)),bar);
-    return [node('code',name),countCell];
+  const tables=model.application.tables;
+  const total=tables.reduce((sum,t)=>sum+t.count,0);
+  const largest=Math.max(1,...tables.map(t=>t.count));
+  $('doc-total').textContent=fmt.format(total)+' registros';
+  $('snapshot-date').textContent='Tabelas verificadas em '+date.format(new Date(model.capturedAt))+' (horário de São Paulo).';
+  const rows=tables.map(({name,count})=>{
+    const link=node('a',name);link.href='#'+name;link.className='table-link';
+    const countCell=node('div',undefined,'count-cell');
+    const bar=node('span',undefined,'bar');const fill=node('span');fill.style.width=count/largest*100+'%';
+    bar.setAttribute('aria-hidden','true');bar.append(fill);countCell.append(node('strong',fmt.format(count)),bar);
+    return [link,node('code','epav_data'),countCell];
   });
-  $('collections').replaceChildren(makeTable(['Coleção','Documentos na cópia'],rows,'Coleções do Firestore'));
+  $('collections').replaceChildren(makeTable(['Tabela PostgreSQL','Esquema','Registros'],rows,'Tabelas da aplicação'));
 }
 
 document.querySelectorAll('[data-section]').forEach(button=>button.addEventListener('click',()=>select(button.dataset.section)));
@@ -156,7 +162,7 @@ window.addEventListener('hashchange',route);
 route();
 
 try {
-  const request = await fetch('./schema.json?v=20261117-postgres');
+  const request = await fetch('./schema.json?v=20261117-tabelas');
   if(!request.ok) throw new Error('Inventário indisponível.');
   model = await request.json();
   $('branch').textContent = model.branch;

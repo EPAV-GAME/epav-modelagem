@@ -1,7 +1,36 @@
 {
   "schema": "epav_migration + epav_data",
   "branch": "production",
-  "capturedAt": "2026-11-17T14:12:33.087Z",
+  "capturedAt": "2026-11-17T14:40:07.620Z",
+  "application": {
+    "schema": "epav_data",
+    "tables": [
+      {
+        "name": "arquivo_produtos_swift",
+        "count": 2777
+      },
+      {
+        "name": "auditoria_catalogo",
+        "count": 4
+      },
+      {
+        "name": "importacoes_catalogo",
+        "count": 1
+      },
+      {
+        "name": "produtos_swift",
+        "count": 918
+      },
+      {
+        "name": "ranking",
+        "count": 0
+      },
+      {
+        "name": "sincronizacao_imagens_swift",
+        "count": 1946
+      }
+    ]
+  },
   "snapshot": {
     "readTime": "2026-11-17T13:57:47.144Z",
     "total": 5646,
@@ -34,6 +63,7 @@
   },
   "objects": [
     {
+      "schema": "epav_migration",
       "name": "snapshots",
       "kind": "table",
       "definition": null,
@@ -98,6 +128,7 @@
       ]
     },
     {
+      "schema": "epav_migration",
       "name": "documents",
       "kind": "table",
       "definition": null,
@@ -183,6 +214,7 @@
       ]
     },
     {
+      "schema": "epav_migration",
       "name": "document_fields",
       "kind": "table",
       "definition": null,
@@ -352,6 +384,7 @@
       ]
     },
     {
+      "schema": "epav_migration",
       "name": "current_documents",
       "kind": "view",
       "definition": " SELECT d.snapshot_id,\n    d.path,\n    d.collection_path,\n    d.document_id,\n    d.created_at,\n    d.updated_at,\n    d.row_id\n   FROM epav_migration.documents d\n     JOIN ( SELECT DISTINCT ON (snapshots.source_database) snapshots.id\n           FROM epav_migration.snapshots\n          ORDER BY snapshots.source_database, snapshots.source_read_time DESC) latest ON latest.id = d.snapshot_id;",
@@ -403,6 +436,7 @@
       "indexes": []
     },
     {
+      "schema": "epav_data",
       "name": "records",
       "kind": "table",
       "definition": null,
@@ -472,6 +506,7 @@
       ]
     },
     {
+      "schema": "epav_data",
       "name": "record_fields",
       "kind": "table",
       "definition": null,
@@ -645,6 +680,7 @@
       ]
     },
     {
+      "schema": "epav_data",
       "name": "ranking",
       "kind": "table",
       "definition": null,
@@ -753,9 +789,10 @@
       ]
     },
     {
+      "schema": "epav_data",
       "name": "products",
       "kind": "view",
-      "definition": " SELECT document_id AS id,\n    ( SELECT record_fields.string_value\n           FROM epav_data.record_fields\n          WHERE record_fields.document_row_id = r.row_id AND record_fields.parent_no IS NULL AND record_fields.field_name::text = 'nome'::text) AS nome,\n    ( SELECT COALESCE(record_fields.string_value, record_fields.integer_value::character varying) AS \"coalesce\"\n           FROM epav_data.record_fields\n          WHERE record_fields.document_row_id = r.row_id AND record_fields.parent_no IS NULL AND record_fields.field_name::text = 'codigo'::text) AS codigo,\n    ( SELECT record_fields.boolean_value\n           FROM epav_data.record_fields\n          WHERE record_fields.document_row_id = r.row_id AND record_fields.parent_no IS NULL AND record_fields.field_name::text = 'disponivelNoJogo'::text) AS disponivel,\n    ARRAY( SELECT f.string_value::character varying(240) AS string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'tiposProduto'::text\n          ORDER BY f.array_index) AS tipos,\n    ARRAY( SELECT f.string_value::character varying(240) AS string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'ocasioes'::text\n          ORDER BY f.array_index) AS ocasioes,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'imagemSwift'::text AND f.field_name::text = 'url'::text) AS imagem_url,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'dadosOriginais'::text AND f.field_name::text = 'Marca'::text) AS marca,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'dadosOriginais'::text AND f.field_name::text = 'Formato'::text) AS formato,\n    ( SELECT f.string_value\n           FROM epav_data.record_fields p\n             JOIN epav_data.record_fields f ON f.document_row_id = p.document_row_id AND f.parent_no = p.node_no\n          WHERE p.document_row_id = r.row_id AND p.parent_no IS NULL AND p.field_name::text = 'dadosOriginais'::text AND f.field_name::text = 'Unidade Medida'::text) AS unidade\n   FROM epav_data.records r\n  WHERE collection_path::text = 'produtos_swift'::text;",
+      "definition": " SELECT p.id,\n    p.nome,\n    p.codigo,\n    p.disponivel_no_jogo AS disponivel,\n    p.tipos_produto AS tipos,\n    p.ocasioes,\n    i.url AS imagem_url,\n    d.marca,\n    d.formato,\n    d.unidade_medida AS unidade\n   FROM epav_data.produtos_swift p\n     LEFT JOIN epav_data.produtos_swift_imagens i ON i.produto_id::text = p.id::text\n     LEFT JOIN epav_data.produtos_swift_dados_originais d ON d.produto_id::text = p.id::text;",
       "columns": [
         {
           "name": "id",
@@ -765,13 +802,13 @@
         },
         {
           "name": "nome",
-          "type": "character varying(1048487)",
+          "type": "character varying(240)",
           "nullable": true,
           "default": null
         },
         {
           "name": "codigo",
-          "type": "character varying",
+          "type": "character varying(128)",
           "nullable": true,
           "default": null
         },
@@ -795,31 +832,1532 @@
         },
         {
           "name": "imagem_url",
-          "type": "character varying(1048487)",
+          "type": "character varying(4096)",
           "nullable": true,
           "default": null
         },
         {
           "name": "marca",
-          "type": "character varying(1048487)",
+          "type": "character varying(120)",
           "nullable": true,
           "default": null
         },
         {
           "name": "formato",
-          "type": "character varying(1048487)",
+          "type": "character varying(80)",
           "nullable": true,
           "default": null
         },
         {
           "name": "unidade",
-          "type": "character varying(1048487)",
+          "type": "character varying(40)",
           "nullable": true,
           "default": null
         }
       ],
       "constraints": [],
       "indexes": []
+    },
+    {
+      "schema": "epav_data",
+      "name": "importacoes_catalogo",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "registro_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "arquivo_origem",
+          "type": "character varying(512)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "aba_origem",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "colecao_origem",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "projeto_firebase_origem",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "importacao_origem_id",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "schema_version",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "sha256_origem",
+          "type": "character varying(64)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "total_disponiveis",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "total_registros",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "verificado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "campos_originais",
+          "type": "character varying(240)[]",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "importacoes_catalogo_registro_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_data.records(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "importacoes_catalogo_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "importacoes_catalogo_registro_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (registro_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "importacoes_catalogo_pkey",
+          "definition": "CREATE UNIQUE INDEX importacoes_catalogo_pkey ON epav_data.importacoes_catalogo USING btree (id)"
+        },
+        {
+          "name": "importacoes_catalogo_registro_id_key",
+          "definition": "CREATE UNIQUE INDEX importacoes_catalogo_registro_id_key ON epav_data.importacoes_catalogo USING btree (registro_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "produtos_swift",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "registro_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "codigo",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "nome",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "disponivel_no_jogo",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "importacao_id",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "linha_origem",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "tipos_produto",
+          "type": "character varying(240)[]",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasioes",
+          "type": "character varying(240)[]",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "atualizado_por",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ultima_alteracao_id",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "produtos_swift_importacao_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (importacao_id) REFERENCES epav_data.importacoes_catalogo(id)"
+        },
+        {
+          "name": "produtos_swift_registro_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_data.records(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "produtos_swift_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "produtos_swift_registro_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (registro_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "produtos_swift_catalogo",
+          "definition": "CREATE INDEX produtos_swift_catalogo ON epav_data.produtos_swift USING btree (disponivel_no_jogo, id)"
+        },
+        {
+          "name": "produtos_swift_codigo",
+          "definition": "CREATE INDEX produtos_swift_codigo ON epav_data.produtos_swift USING btree (codigo)"
+        },
+        {
+          "name": "produtos_swift_pkey",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_pkey ON epav_data.produtos_swift USING btree (id)"
+        },
+        {
+          "name": "produtos_swift_registro_id_key",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_registro_id_key ON epav_data.produtos_swift USING btree (registro_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "produtos_swift_versoes",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "registro_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "posicao",
+          "type": "character varying(10)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "produto_origem_id",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "codigo",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "nome",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "disponivel_no_jogo",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "importacao_id",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "linha_origem",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "tipos_produto",
+          "type": "character varying(240)[]",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasioes",
+          "type": "character varying(240)[]",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "atualizado_por",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ultima_alteracao_id",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "produtos_swift_versoes_posicao_check",
+          "kind": "c",
+          "definition": "CHECK (posicao::text = ANY (ARRAY['dados'::character varying, 'antes'::character varying, 'depois'::character varying]::text[]))"
+        },
+        {
+          "name": "produtos_swift_versoes_importacao_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (importacao_id) REFERENCES epav_data.importacoes_catalogo(id)"
+        },
+        {
+          "name": "produtos_swift_versoes_registro_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_data.records(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "produtos_swift_versoes_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "produtos_swift_versoes_registro_id_posicao_key",
+          "kind": "u",
+          "definition": "UNIQUE (registro_id, posicao)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "produtos_swift_versoes_pkey",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_versoes_pkey ON epav_data.produtos_swift_versoes USING btree (id)"
+        },
+        {
+          "name": "produtos_swift_versoes_registro_id_posicao_key",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_versoes_registro_id_posicao_key ON epav_data.produtos_swift_versoes USING btree (registro_id, posicao)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "produtos_swift_dados_originais",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "produto_id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "codigo_produto",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "descricao_produto",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "unidade_medida",
+          "type": "character varying(40)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "volume_kg",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "volume_un",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_medio_sem_desconto",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_sem_desconto_observacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_medio_com_desconto",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_com_desconto_observacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "margem_contribuicao",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "margem_observacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "status_produto",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "marca",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia_analitica_1",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia_analitica_2",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "nome_fornecedor",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasiao",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "formato",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "produtor",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "categoria",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "valor_agregado",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "tipo_produto_original",
+          "type": "character varying(150)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "disponivel_original",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasioes_original",
+          "type": "character varying(200)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "carnes",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "aves",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "pescados",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "acompanhamentos",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "sobremesas",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "despensa",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "praticidade",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "dia_a_dia",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "churrasco",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "lanches",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "receitas",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia_ocasiao",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasioes_especiais",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "leve",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "produtos_swift_dados_originais_produto_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (produto_id) REFERENCES epav_data.produtos_swift(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "produtos_swift_dados_originais_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (produto_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "produtos_swift_dados_originais_pkey",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_dados_originais_pkey ON epav_data.produtos_swift_dados_originais USING btree (produto_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "produtos_swift_imagens",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "produto_id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "bucket",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "object_key",
+          "type": "character varying(1024)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "url",
+          "type": "character varying(4096)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "formato",
+          "type": "character varying(20)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "largura",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "altura",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "bytes",
+          "type": "bigint",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "sha256",
+          "type": "character varying(64)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "pixel_hash",
+          "type": "character varying(64)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "nome_origem",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "pagina_origem",
+          "type": "character varying(4096)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "sku_origem",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "url_origem",
+          "type": "character varying(4096)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "metodo_correspondencia",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "versao_correspondencia",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "versao_transformacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "manual",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "origem",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "produtos_swift_imagens_produto_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (produto_id) REFERENCES epav_data.produtos_swift(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "produtos_swift_imagens_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (produto_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "produtos_swift_imagens_hash",
+          "definition": "CREATE INDEX produtos_swift_imagens_hash ON epav_data.produtos_swift_imagens USING btree (sha256)"
+        },
+        {
+          "name": "produtos_swift_imagens_pkey",
+          "definition": "CREATE UNIQUE INDEX produtos_swift_imagens_pkey ON epav_data.produtos_swift_imagens USING btree (produto_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "versoes_produtos_dados_originais",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "versao_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "codigo_produto",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "descricao_produto",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "unidade_medida",
+          "type": "character varying(40)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "volume_kg",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "volume_un",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_medio_sem_desconto",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_sem_desconto_observacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_medio_com_desconto",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "preco_com_desconto_observacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "margem_contribuicao",
+          "type": "double precision",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "margem_observacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "status_produto",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "marca",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia_analitica_1",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia_analitica_2",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "nome_fornecedor",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasiao",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "formato",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "produtor",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "categoria",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "valor_agregado",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "tipo_produto_original",
+          "type": "character varying(150)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "disponivel_original",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasioes_original",
+          "type": "character varying(200)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "carnes",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "aves",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "pescados",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "acompanhamentos",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "sobremesas",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "despensa",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "praticidade",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "dia_a_dia",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "churrasco",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "lanches",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "receitas",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "familia_ocasiao",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "ocasioes_especiais",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "leve",
+          "type": "character varying(3)",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "versoes_produtos_dados_originais_versao_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (versao_id) REFERENCES epav_data.produtos_swift_versoes(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "versoes_produtos_dados_originais_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (versao_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "versoes_produtos_dados_originais_pkey",
+          "definition": "CREATE UNIQUE INDEX versoes_produtos_dados_originais_pkey ON epav_data.versoes_produtos_dados_originais USING btree (versao_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "versoes_produtos_imagens",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "versao_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "bucket",
+          "type": "character varying(120)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "object_key",
+          "type": "character varying(1024)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "url",
+          "type": "character varying(4096)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "formato",
+          "type": "character varying(20)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "largura",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "altura",
+          "type": "integer",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "bytes",
+          "type": "bigint",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "sha256",
+          "type": "character varying(64)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "pixel_hash",
+          "type": "character varying(64)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "nome_origem",
+          "type": "character varying(240)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "pagina_origem",
+          "type": "character varying(4096)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "sku_origem",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "url_origem",
+          "type": "character varying(4096)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "metodo_correspondencia",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "versao_correspondencia",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "versao_transformacao",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "manual",
+          "type": "boolean",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "origem",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "versoes_produtos_imagens_versao_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (versao_id) REFERENCES epav_data.produtos_swift_versoes(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "versoes_produtos_imagens_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (versao_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "versoes_produtos_imagens_pkey",
+          "definition": "CREATE UNIQUE INDEX versoes_produtos_imagens_pkey ON epav_data.versoes_produtos_imagens USING btree (versao_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "arquivo_produtos_swift",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "registro_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "produto_origem_id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "motivo",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "versao_original",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "duplicado_de",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "arquivado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "dados_versao_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "arquivo_produtos_swift_dados_versao_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (dados_versao_id) REFERENCES epav_data.produtos_swift_versoes(id)"
+        },
+        {
+          "name": "arquivo_produtos_swift_registro_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_data.records(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "arquivo_produtos_swift_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "arquivo_produtos_swift_dados_versao_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (dados_versao_id)"
+        },
+        {
+          "name": "arquivo_produtos_swift_registro_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (registro_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "arquivo_produtos_swift_dados_versao_id_key",
+          "definition": "CREATE UNIQUE INDEX arquivo_produtos_swift_dados_versao_id_key ON epav_data.arquivo_produtos_swift USING btree (dados_versao_id)"
+        },
+        {
+          "name": "arquivo_produtos_swift_pkey",
+          "definition": "CREATE UNIQUE INDEX arquivo_produtos_swift_pkey ON epav_data.arquivo_produtos_swift USING btree (id)"
+        },
+        {
+          "name": "arquivo_produtos_swift_registro_id_key",
+          "definition": "CREATE UNIQUE INDEX arquivo_produtos_swift_registro_id_key ON epav_data.arquivo_produtos_swift USING btree (registro_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "auditoria_catalogo",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "registro_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "produto_origem_id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "produto_atual_id",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "autor_uid",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "autor_email",
+          "type": "character varying(320)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "antes_versao_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "depois_versao_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "auditoria_catalogo_antes_versao_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (antes_versao_id) REFERENCES epav_data.produtos_swift_versoes(id)"
+        },
+        {
+          "name": "auditoria_catalogo_depois_versao_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (depois_versao_id) REFERENCES epav_data.produtos_swift_versoes(id)"
+        },
+        {
+          "name": "auditoria_catalogo_produto_atual_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (produto_atual_id) REFERENCES epav_data.produtos_swift(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "auditoria_catalogo_registro_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_data.records(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "auditoria_catalogo_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "auditoria_catalogo_registro_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (registro_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "auditoria_catalogo_data",
+          "definition": "CREATE INDEX auditoria_catalogo_data ON epav_data.auditoria_catalogo USING btree (criado_em DESC, id DESC)"
+        },
+        {
+          "name": "auditoria_catalogo_pkey",
+          "definition": "CREATE UNIQUE INDEX auditoria_catalogo_pkey ON epav_data.auditoria_catalogo USING btree (id)"
+        },
+        {
+          "name": "auditoria_catalogo_registro_id_key",
+          "definition": "CREATE UNIQUE INDEX auditoria_catalogo_registro_id_key ON epav_data.auditoria_catalogo USING btree (registro_id)"
+        }
+      ]
+    },
+    {
+      "schema": "epav_data",
+      "name": "sincronizacao_imagens_swift",
+      "kind": "table",
+      "definition": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "registro_id",
+          "type": "bigint",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "produto_origem_id",
+          "type": "character varying(1500)",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "produto_atual_id",
+          "type": "character varying(1500)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "verificado_em",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "etag",
+          "type": "character varying(1024)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "last_modified",
+          "type": "character varying(128)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "pixel_hash",
+          "type": "character varying(64)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "url_origem",
+          "type": "character varying(4096)",
+          "nullable": true,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "character varying(80)",
+          "nullable": true,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "sincronizacao_imagens_swift_produto_atual_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (produto_atual_id) REFERENCES epav_data.produtos_swift(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "sincronizacao_imagens_swift_registro_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (registro_id) REFERENCES epav_data.records(row_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "sincronizacao_imagens_swift_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "sincronizacao_imagens_swift_registro_id_key",
+          "kind": "u",
+          "definition": "UNIQUE (registro_id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sincronizacao_imagens_swift_pkey",
+          "definition": "CREATE UNIQUE INDEX sincronizacao_imagens_swift_pkey ON epav_data.sincronizacao_imagens_swift USING btree (id)"
+        },
+        {
+          "name": "sincronizacao_imagens_swift_registro_id_key",
+          "definition": "CREATE UNIQUE INDEX sincronizacao_imagens_swift_registro_id_key ON epav_data.sincronizacao_imagens_swift USING btree (registro_id)"
+        }
+      ]
     }
   ]
 }

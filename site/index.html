@@ -7,8 +7,8 @@
 <meta name="description" content="Explore o esquema PostgreSQL e o inventário da migração de dados do EPAV.">
 <title>Modelagem de dados · EPAV</title>
 <link rel="icon" href="./epav-logo.webp" type="image/webp">
-<link rel="stylesheet" href="./style.css?v=20261117-postgres">
-<script type="module" src="./app.js?v=20261117-postgres"></script>
+<link rel="stylesheet" href="./style.css?v=20261117-tabelas">
+<script type="module" src="./app.js?v=20261117-tabelas"></script>
 </head>
 <body>
 <header class="topbar"><div class="frame top-inner"><a class="brand" href="./"><span class="symbol"><img src="./epav-logo.webp" alt="" width="38" height="34"></span> EPAV <span> / Dados</span></a><a class="repo" href="https://github.com/EPAV-GAME/epav-modelagem">GitHub <span aria-hidden="true">↗</span></a></div></header>
@@ -21,7 +21,7 @@
   </section>
   <nav class="tab-strip" aria-label="Seções">
     <button type="button" data-section="esquema" aria-pressed="true">Esquema SQL</button>
-    <button type="button" data-section="colecoes" aria-pressed="false">Coleções de origem</button>
+    <button type="button" data-section="colecoes" aria-pressed="false">Tabelas da aplicação</button>
     <button type="button" data-section="scripts" aria-pressed="false">Scripts</button>
   </nav>
   <p id="error" role="alert" hidden></p>
@@ -41,8 +41,8 @@
     </div>
   </section>
   <section id="colecoes" class="section plain-panel" hidden>
-    <div class="section-head"><div><small>CÓPIA DO FIRESTORE</small><h2>Coleções de origem</h2></div><strong class="pill" id="doc-total"></strong></div>
-    <p>A coluna <code>documents.collection_path</code> identifica a coleção de origem. Seus campos ficam em <code>document_fields</code>, com tipos próprios para números, datas, textos e listas.</p>
+    <div class="section-head"><div><small>TABELAS POSTGRESQL</small><h2>Tabelas da aplicação</h2></div><strong class="pill" id="doc-total"></strong></div>
+    <p>Cada coleção foi convertida em uma tabela própria. Clique no nome para explorar suas colunas, chaves e relacionamentos. Fotos, dados de origem e versões históricas usam tabelas relacionadas.</p>
     <p class="muted" id="snapshot-date"></p><div id="collections"></div>
   </section>
   <section id="scripts" class="section plain-panel" hidden>
