@@ -6,10 +6,10 @@ Branch de testes: `br-lucky-star-za2fy0sm` (`epav-firestore-migration`).
 
 ## Destino dos dados
 
-- `epav_migration`: snapshots completos, documentos e campos tipados para conferir e preservar a origem.
+- Os snapshots completos da origem estão preservados na branch de backup indicada abaixo; não permanecem nas tabelas de produção.
 - `epav_data.produtos_swift`, `arquivo_produtos_swift`, `auditoria_catalogo`, `importacoes_catalogo`, `sincronizacao_imagens_swift` e `ranking`: tabelas próprias para cada coleção.
 - Fotos, dados originais da planilha e versões históricas ficam em tabelas relacionadas por chaves estrangeiras.
-- `epav_data.records` e `record_fields`: compatibilidade tipada com os valores exatos da origem. Um gatilho adiado sincroniza as tabelas de negócio na mesma transação das gravações da API.
+- `epav_internal.records` e `record_fields`: compatibilidade tipada com os valores exatos da origem. Um gatilho adiado sincroniza as tabelas de negócio na mesma transação das gravações da API.
 - `epav_data.products`: view pública, agora atendida pelas tabelas de produtos, fotos e dados originais.
 
 Não há colunas TEXT, JSON ou JSONB. Números, datas, bytes, referências, mapas, listas e valores nulos conservam seus tipos. JSON só aparece no transporte de parâmetros e nas respostas HTTP.
@@ -33,6 +33,16 @@ Edições de produto e auditoria são atômicas e exigem a revisão que o painel
 7. Publicar a API, os dois jogos e o painel; publicar o robô atualizado e retomar seu agendamento.
 8. Exportar apenas a estrutura e os totais: `node scripts/export-schema.mjs <arquivo-local-de-conexao> --production`. Nenhum registro individual vai para o site de modelagem.
 
-Os arquivos locais de conexão e tokens não são versionados. Não remover o Firestore antigo nem os snapshots após o corte: permanecem como backup. As regras do Firestore negam acessos dos clientes; contas de serviço antigas devem ser retiradas dos serviços que não precisam mais delas.
+Os arquivos locais de conexão e tokens não são versionados. O Firestore antigo permanece bloqueado para clientes. Os snapshots são preservados na branch de backup; a cópia repetida em produção foi retirada conforme a limpeza descrita abaixo. As regras do Firestore negam acessos dos clientes; contas de serviço antigas devem ser retiradas dos serviços que não precisam mais delas.
 
 A tabela `sincronizacao_imagens_swift` mantém o identificador de origem mesmo se o produto foi arquivado. Sua referência opcional ao produto ativo fica nula após a remoção. A auditoria segue a mesma regra; suas versões históricas permanecem preservadas. UIDs do Firebase são identidades externas e não exigem uma tabela de senhas ou usuários no Postgres.
+
+## Encerramento e limpeza (17/11/2026)
+
+A branch `epav-before-schema-cleanup-20261117` (`br-noisy-cell-za5dlp8x`) preserva a produção anterior à limpeza, sem compute ativo. A produção deixa de manter `epav_migration.snapshots`, `documents`, `document_fields` e `current_documents`. `records`, `record_fields` e seu tipo de valores passam a `epav_internal`, pois ainda dão suporte às operações atômicas da API.
+
+A migração `006` move os objetos internos, atualiza as funções e cria views temporárias para a API antiga continuar funcionando. Depois de publicar a API com acesso direto a `epav_internal`, aguardar o término das requisições em andamento e verificar os endpoints, aplicar `007` para retirar essas views. O explorador publica apenas `epav_data`, com as tabelas de negócio e seus relacionamentos.
+
+Teste e execução: `node scripts/cleanup-storage.mjs <arquivo-de-conexao> prepare` e depois `finalize`. Em produção, acrescentar `--production` e definir `EPAV_CLEANUP_BACKUP_BRANCH_ID=br-noisy-cell-za5dlp8x`. O script compara todas as contagens de negócio, o catálogo público e os campos internos, e testa gravação e rollback. Não utiliza CASCADE para remover os objetos antigos.
+
+Os passos anteriores documentam a construção histórica do banco. Não executar novamente os importadores/ativadores antigos na produção limpa. Novas migrações devem partir da estrutura atual; o exportador agora lê somente as tabelas de negócio.

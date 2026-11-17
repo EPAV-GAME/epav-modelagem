@@ -23,8 +23,14 @@ try{
     const url=new URL(env.DATABASE_URL);url.username=role;url.password=password;
     runtime={DATABASE_URL:url.href,DATA_SYNC_TOKEN:randomBytes(48).toString('base64url')};
   }
-  await db.query(`GRANT USAGE ON SCHEMA epav_data,epav_migration TO ${role}`);
-  await db.query(`GRANT USAGE ON TYPE epav_migration.firestore_kind TO ${role}`);
+  const internal=(await db.query("SELECT to_regclass('epav_internal.records') IS NOT NULL AS present")).rows[0].present;
+  const storage=internal?'epav_internal':'epav_migration';
+  await db.query(`GRANT USAGE ON SCHEMA epav_data,${storage} TO ${role}`);
+  if(internal){
+    await db.query(`GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA epav_internal TO ${role}`);
+    await db.query(`GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA epav_internal TO ${role}`);
+  }
+  await db.query(`GRANT USAGE ON TYPE ${storage}.firestore_kind TO ${role}`);
   await db.query(`GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA epav_data TO ${role}`);
   await db.query(`GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA epav_data TO ${role}`);
   await db.query(`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA epav_data TO ${role}`);

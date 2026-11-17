@@ -2,13 +2,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { parseEnv } from 'node:util';
 import pg from 'pg';
 
-const namespace = ['epav_migration','epav_data'];
-const objects = ['snapshots', 'documents', 'document_fields', 'current_documents', 'records', 'record_fields', 'ranking', 'products', 'importacoes_catalogo','produtos_swift','produtos_swift_versoes',
+const namespace = ['epav_data'];
+const objects = ['ranking','products','importacoes_catalogo','produtos_swift','produtos_swift_versoes',
   'produtos_swift_dados_originais','produtos_swift_imagens','versoes_produtos_dados_originais',
   'versoes_produtos_imagens','arquivo_produtos_swift','auditoria_catalogo','sincronizacao_imagens_swift'];
 const collections = ['arquivo_produtos_swift', 'auditoria_catalogo', 'importacoes_catalogo',
   'produtos_swift', 'ranking', 'sincronizacao_imagens_swift'];
-const source = 'projects/epav-game/databases/(default)';
 
 async function main() {
   const env = parseEnv(await readFile(process.argv[2] || '.env.neon-migration', 'utf8'));
@@ -44,17 +43,8 @@ async function main() {
     const { rows: indexes } = await client.query(`
       SELECT tablename AS object,indexname AS name,indexdef AS definition FROM pg_indexes
       WHERE schemaname=ANY($1::varchar[]) AND tablename=ANY($2) ORDER BY tablename,indexname`, params);
-    const { rows: [snapshot] } = await client.query(`
-      SELECT source_read_time AS "readTime", document_count::int AS total
-      FROM epav_migration.snapshots WHERE source_database=$1 ORDER BY source_read_time DESC LIMIT 1`, [source]);
-    const { rows: counts } = await client.query(`
-      SELECT split_part(d.collection_path,'/',1) AS name, count(*)::int AS count
-      FROM epav_migration.current_documents d JOIN epav_migration.snapshots s ON s.id=d.snapshot_id
-      WHERE s.source_database=$1 GROUP BY 1 ORDER BY 1`, [source]);
-    if (relations.length !== objects.length || columns.some(column => /^(?:text|jsonb?)(?:\[\])?$/.test(column.type))
-        || !snapshot || counts.some(row => !collections.includes(row.name))
-        || counts.reduce((n,row) => n + row.count, 0) !== snapshot.total) {
-      throw new Error('Confira os objetos, a lista pública de coleções e o manifesto antes de exportar.');
+    if (relations.length !== objects.length || columns.some(column => /^(?:text|jsonb?)(?:\[\])?$/.test(column.type))) {
+      throw new Error('Confira as tabelas de negócio e os tipos antes de exportar.');
     }
     const application = {schema:'epav_data',tables:[]};
     for(const name of collections) {
@@ -65,14 +55,13 @@ async function main() {
     const model = {
       schema: namespace.join(' + '), branch: process.argv.includes('--production')?'production':'epav-firestore-migration', capturedAt: new Date().toISOString(),
       application,
-      snapshot: {...snapshot, collections: collections.map(name => ({name, count: counts.find(row=>row.name===name)?.count ?? 0}))},
       objects: objects.map(name => {
         const only = rows => rows.filter(row => row.object===name).map(({object,...rest}) => rest);
         return {...relations.find(row => row.name===name), columns:only(columns), constraints:only(constraints), indexes:only(indexes)};
       })
     };
     await writeFile(new URL('../site/schema.json', import.meta.url), JSON.stringify(model,null,2)+'\n');
-    console.log(`Exportados ${model.objects.length} objetos e ${model.snapshot.collections.length} totais; sem registros individuais.`);
+    console.log(`Exportados ${model.objects.length} objetos e ${model.application.tables.length} totais; sem registros individuais.`);
   } finally { await client.end(); }
 }
 main().catch(err => {

@@ -10,14 +10,8 @@ const meta = {
   arquivo_produtos_swift: ['Produtos arquivados', 'Motivo, momento do arquivamento, versão original e referência à cópia completa do produto. O identificador de origem é mantido mesmo após sua remoção do catálogo.'],
   auditoria_catalogo: ['Histórico de alterações', 'Administrador, data e produto alterado, com referências às versões completas antes e depois. O histórico permanece após arquivar o produto.'],
   sincronizacao_imagens_swift: ['Sincronização de fotos', 'Última verificação, ETag, Last-Modified, hash e URL de origem. Preserva verificações históricas mesmo quando o produto já não está ativo.'],
-  records: ['Dados operacionais', 'Registros ativos usados pela API, pelo painel e pelo robô. A revisão identifica conflitos entre edições simultâneas.'],
-  record_fields: ['Valores operacionais', 'Campos tipados dos registros ativos. Preservam mapas, listas e todos os tipos da origem sem colunas JSON ou TEXT.'],
   ranking: ['Resultados dos jogadores', 'Uma publicação por usuário do Firebase Authentication. Colunas próprias e limites para pontuação, satisfação e tempo.'],
   products: ['Catálogo público', 'View com os campos públicos do produto: nome, código, categorias, marca, formato, unidade e foto. Dados comerciais ficam fora da resposta do jogo.'],
-  snapshots: ['Histórico de cópias', 'Uma linha por leitura confirmada do Firestore. Guarda o horário da leitura, o horário da importação e a contagem de documentos.'],
-  documents: ['Documentos copiados', 'Uma linha por documento em cada cópia. O caminho completo distingue documentos com o mesmo ID em coleções diferentes.'],
-  document_fields: ['Campos e valores tipados', 'Uma linha por campo ou item de lista. A coluna kind indica o tipo do valor. parent_no liga os itens aos seus mapas e listas, e array_index preserva a ordem.'],
-  current_documents: ['Cópia mais recente', 'A view consulta documents e escolhe, para cada banco de origem, a cópia com o horário de leitura mais recente. Não guarda outra cópia dos documentos.'],
 };
 const fmt = new Intl.NumberFormat('pt-BR');
 const date = new Intl.DateTimeFormat('pt-BR', {dateStyle:'medium',timeStyle:'short',timeZone:'America/Sao_Paulo'});
@@ -162,7 +156,7 @@ window.addEventListener('hashchange',route);
 route();
 
 try {
-  const request = await fetch('./schema.json?v=20261117-tabelas');
+  const request = await fetch('./schema.json?v=20261117-clean');
   if(!request.ok) throw new Error('Inventário indisponível.');
   model = await request.json();
   $('branch').textContent = model.branch;
